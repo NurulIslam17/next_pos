@@ -1,0 +1,61 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Product\StoreProductRequest;
+use App\Http\Requests\Product\UpdateProductRequest;
+use App\Http\Resources\ProductResource;
+use App\Services\ProductService;
+use App\Traits\ApiResponse;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class ProductController extends Controller
+{
+    use ApiResponse;
+
+    public function __construct(protected ProductService $products) {}
+
+    public function index(Request $request): JsonResponse
+    {
+        $items = $this->products->list($request->query('search'), (int) $request->query('per_page', 10), $request->integer('category_id') ?: null, $request->integer('shop_id') ?: null);
+
+        return $this->paginated(ProductResource::collection($items));
+    }
+
+    public function all(Request $request): JsonResponse
+    {
+        return $this->success(ProductResource::collection($this->products->all($request->integer('shop_id') ?: null)));
+    }
+
+    public function nextSku(Request $request): JsonResponse
+    {
+        return $this->success(['sku' => $this->products->generateSku($request->user()->shop_id)]);
+    }
+
+    public function show(int $product): JsonResponse
+    {
+        return $this->success(new ProductResource($this->products->get($product)));
+    }
+
+    public function store(StoreProductRequest $request): JsonResponse
+    {
+        return $this->created(new ProductResource($this->products->create([
+            ...$request->validated(),
+            'created_by_shop_id' => $request->user()->shop_id,
+        ])), 'Product created');
+    }
+
+    public function update(UpdateProductRequest $request, int $product): JsonResponse
+    {
+        return $this->success(new ProductResource($this->products->update($product, $request->validated())), 'Product updated');
+    }
+
+    public function destroy(int $product): JsonResponse
+    {
+        $this->products->delete($product);
+
+        return $this->noContent();
+    }
+}
