@@ -28,6 +28,7 @@ const navigation = [
             { to: '/configuration/users', label: 'Users', icon: FiUsers, permission: 'users.view' },
             { to: '/configuration/shops', label: 'Shops', icon: FiShoppingBag, permission: 'shops.view' },
             { to: '/configuration/suppliers', label: 'Suppliers', icon: FiTruck, permission: 'suppliers.view' },
+            { to: '/configuration/customers', label: 'Customers', icon: FiUser, permission: 'customers.view' },
             { to: '/configuration/payment-types', label: 'Payment Types', icon: FiCreditCard, permission: 'payment_types.view' },
             { to: '/configuration/roles', label: 'Roles', icon: FiShield, permission: 'roles.view' },
             { to: '/configuration/permissions', label: 'Permissions', icon: FiKey, permission: 'permissions.view' },

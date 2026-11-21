@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BrandController;
 use App\Http\Controllers\Api\V1\CategoryController;
+use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\PaymentTypeController;
 use App\Http\Controllers\Api\V1\PermissionController;
@@ -78,6 +79,13 @@ Route::prefix('v1')->group(function () {
             Route::post('/', 'store')->middleware('permission:suppliers.create');
             Route::match(['put', 'patch'], '{supplier}', 'update')->middleware('permission:suppliers.update');
             Route::delete('{supplier}', 'destroy')->middleware('permission:suppliers.delete');
+        });
+
+        Route::controller(CustomerController::class)->prefix('customers')->group(function () {
+            Route::get('/', 'index')->middleware('permission:customers.view');
+            Route::post('/', 'store')->middleware('permission:customers.create');
+            Route::match(['put', 'patch'], '{customer}', 'update')->middleware('permission:customers.update');
+            Route::delete('{customer}', 'destroy')->middleware('permission:customers.delete');
         });
 
         Route::controller(PaymentTypeController::class)->prefix('payment-types')->group(function () {

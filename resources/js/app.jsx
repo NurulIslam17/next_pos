@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import Barcodes from './pages/Barcodes';
 import Brands from './pages/config/Brands';
 import Categories from './pages/Categories';
+import Customers from './pages/config/Customers';
 import Dashboard from './pages/Dashboard';
 import PaymentTypes from './pages/config/PaymentTypes';
 import Permissions from './pages/config/Permissions';
@@ -30,6 +31,7 @@ const pages = [
     { path: '/configuration/users', permission: 'users.view', element: <Users /> },
     { path: '/configuration/shops', permission: 'shops.view', element: <Shops /> },
     { path: '/configuration/suppliers', permission: 'suppliers.view', element: <Suppliers /> },
+    { path: '/configuration/customers', permission: 'customers.view', element: <Customers /> },
     { path: '/configuration/payment-types', permission: 'payment_types.view', element: <PaymentTypes /> },
     { path: '/configuration/roles', permission: 'roles.view', element: <Roles /> },
     { path: '/configuration/permissions', permission: 'permissions.view', element: <Permissions /> },

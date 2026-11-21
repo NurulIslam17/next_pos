@@ -20,6 +20,7 @@ class PermissionSeeder extends Seeder
         'barcodes' => ['view'],
         'shops' => ['view', 'create', 'update', 'delete'],
         'suppliers' => ['view', 'create', 'update', 'delete'],
+        'customers' => ['view', 'create', 'update', 'delete'],
         'payment_types' => ['view', 'create', 'update', 'delete'],
         'users' => ['view', 'create', 'update', 'delete'],
         'roles' => ['view', 'create', 'update', 'delete'],
@@ -51,7 +52,7 @@ class PermissionSeeder extends Seeder
             'purchases.view', 'purchases.create',
             'categories.view', 'categories.create',
             'brands.view', 'brands.create', 'barcodes.view', 'shops.view', 'suppliers.view',
-            'payment_types.view',
+            'customers.view', 'customers.create', 'payment_types.view',
         ]);
 
         // Viewer: read-only across the whole system.
