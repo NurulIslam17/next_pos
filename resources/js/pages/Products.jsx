@@ -9,6 +9,29 @@ import { primaryButton, rowDeleteButton, rowEditButton, secondaryButton } from '
 
 const money = (value) => Number(value ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+const PLACEHOLDER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">
+  <rect width="160" height="160" fill="#f1f5f9"/>
+  <path d="M28 38h104v84H28zM28 99l31-31 24 24 18-18 31 31" fill="none" stroke="#94a3b8" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="103" cy="61" r="8" fill="none" stroke="#94a3b8" stroke-width="6"/>
+  <text x="80" y="142" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#64748b">No image</text>
+</svg>
+`)}`;
+
+function ProductPhoto({ image, className = '' }) {
+    const label = image?.original_name ?? 'No product image';
+
+    return (
+        <img
+            src={image?.url || PLACEHOLDER_IMAGE}
+            alt={label}
+            title={label}
+            onError={(event) => { event.currentTarget.src = PLACEHOLDER_IMAGE; }}
+            className={className}
+        />
+    );
+}
+
 function Detail({ label, children, className = '' }) {
     return (
         <div className={className}>
@@ -38,6 +61,19 @@ function ProductDetails({ product }) {
                 </span>
             </Detail>
             <Detail label="Note" className="col-span-2 sm:col-span-3">{product.note}</Detail>
+            <Detail label="Photos" className="col-span-2 sm:col-span-3">
+                        {product.images?.length ? (
+                            <div className="flex flex-wrap gap-2">
+                                {product.images.map((image) => (
+                                    <a key={image.id} href={image.url} target="_blank" rel="noreferrer">
+                                        <ProductPhoto image={image} className="h-20 w-20 rounded-lg object-cover ring-1 ring-slate-200" />
+                                    </a>
+                                ))}
+                            </div>
+                        ) : (
+                            <ProductPhoto className="h-20 w-20 rounded-lg object-cover ring-1 ring-slate-200" />
+                        )}
+            </Detail>
             <Detail label="Created at">{product.created_at}</Detail>
             <Detail label="Updated at">{product.updated_at}</Detail>
         </dl>
@@ -155,6 +191,7 @@ export default function Products() {
                     <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                         <tr>
                             <th className="px-4 py-3">SL</th>
+                            <th className="px-4 py-3">Photo</th>
                             <th className="px-4 py-3">Code</th>
                             <th className="px-4 py-3">Name</th>
                             <th className="px-4 py-3">Category</th>
@@ -171,18 +208,21 @@ export default function Products() {
                     <tbody className="divide-y divide-slate-100">
                         {isLoading && (
                             <tr>
-                                <td colSpan={11} className="px-4 py-10 text-center text-slate-400">Loading…</td>
+                                <td colSpan={12} className="px-4 py-10 text-center text-slate-400">Loading…</td>
                             </tr>
                         )}
                         {!isLoading && products.length === 0 && (
                             <tr>
-                                <td colSpan={11} className="px-4 py-10 text-center text-slate-400">No products found.</td>
+                                <td colSpan={12} className="px-4 py-10 text-center text-slate-400">No products found.</td>
                             </tr>
                         )}
                         {!isLoading &&
                             products.map((product,index) => (
                                 <tr key={product.id} className="hover:bg-slate-50">
                                     <td className="whitespace-nowrap px-4 py-3 font-mono text-xs">{index + 1}</td>
+                                    <td className="px-4 py-3">
+                                        <ProductPhoto image={product.images?.[0]} className="h-10 w-10 rounded object-cover ring-1 ring-slate-200" />
+                                    </td>
                                     <td className="whitespace-nowrap px-4 py-3 font-mono text-xs">{product.sku}</td>
                                     <td className="px-4 py-3 font-medium">{product.name}</td>
                                     <td className="px-4 py-3 text-slate-600">{product.category ?? '—'}</td>

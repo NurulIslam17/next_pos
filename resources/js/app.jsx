@@ -11,6 +11,7 @@ import PaymentTypes from './pages/config/PaymentTypes';
 import Permissions from './pages/config/Permissions';
 import Roles from './pages/config/Roles';
 import Shops from './pages/config/Shops';
+import ShopMonitor from './pages/ShopMonitor';
 import Suppliers from './pages/config/Suppliers';
 import Users from './pages/config/Users';
 import Login from './pages/Login';
@@ -20,6 +21,7 @@ import Purchases from './pages/Purchases';
 // Each page with the permission needed to open it; the first match becomes the landing page.
 const pages = [
     { path: '/dashboard', permission: 'dashboard.view', element: <Dashboard /> },
+    { path: '/shop-monitor', permission: 'shop_monitor.view', element: <ShopMonitor /> },
     { path: '/products', permission: 'products.view', element: <Products /> },
     { path: '/purchases', permission: 'purchases.view', element: <Purchases /> },
     { path: '/categories', permission: 'categories.view', element: <Categories /> },

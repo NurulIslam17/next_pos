@@ -8,10 +8,14 @@ use App\Repositories\Contracts\ProductRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ProductService
 {
-    public function __construct(protected ProductRepositoryInterface $products) {}
+    public function __construct(
+        protected ProductRepositoryInterface $products,
+        protected ProductImageService $images,
+    ) {}
 
     public function all(?int $shopId = null): Collection
     {
@@ -25,7 +29,7 @@ class ProductService
 
     public function get(int $id): Product
     {
-        return $this->products->findOrFail($id);
+        return $this->products->findOrFail($id, ['*'], ['images']);
     }
 
     /**
@@ -45,23 +49,50 @@ class ProductService
         return $sku;
     }
 
-    public function create(array $data): Product
+    public function create(array $data, string $shopCode): Product
     {
-        // Keep the previewed code when it is still free; otherwise issue a fresh one.
+        $images = $data['images'] ?? [];
+        unset($data['images'], $data['removed_image_ids']);
+
         if (empty($data['sku']) || $this->products->skuExists($data['sku'])) {
             $data['sku'] = $this->generateSku($data['created_by_shop_id'] ?? null);
         }
 
-        return DB::transaction(fn () => $this->products->create($data));
+        return DB::transaction(function () use ($data, $images, $shopCode): Product {
+            $product = $this->products->create($data);
+            $this->images->attach($product, $shopCode, $images);
+
+            return $product->load('images');
+        });
     }
 
-    public function update(int $id, array $data): Product
+    public function update(int $id, array $data, string $shopCode): Product
     {
-        return DB::transaction(fn () => $this->products->update($id, $data));
+        $images = $data['images'] ?? [];
+        $removedIds = $data['removed_image_ids'] ?? [];
+        unset($data['images'], $data['removed_image_ids']);
+
+        return DB::transaction(function () use ($id, $data, $images, $removedIds, $shopCode): Product {
+            $product = $this->products->update($id, $data);
+            $remaining = $product->images()->whereKeyNot($removedIds)->count();
+
+            if ($remaining + count($images) > 10) {
+                throw ValidationException::withMessages(['images' => ['A product can have at most 10 photos.']]);
+            }
+
+            $this->images->sync($product, $shopCode, $images, $removedIds);
+
+            return $product->load('images');
+        });
     }
 
     public function delete(int $id): bool
     {
-        return $this->products->delete($id);
+        return DB::transaction(function () use ($id): bool {
+            $product = $this->products->findOrFail($id);
+            $this->images->deleteAll($product);
+
+            return $this->products->delete($id);
+        });
     }
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FiArrowLeft, FiCheck, FiEye, FiPlus, FiSearch, FiX } from 'react-icons/fi';
+import { FiArrowLeft, FiCheck, FiChevronLeft, FiChevronRight, FiDownload, FiEye, FiPlus, FiSearch, FiX } from 'react-icons/fi';
 import { api } from '../api';
 import { useAuth } from '../auth';
 import Modal from '../components/Modal';
@@ -13,19 +13,23 @@ const StatusBadge = ({ status }) => (
 );
 
 export default function Purchases() {
-    const { can } = useAuth();
+    const { can, user } = useAuth();
+    const isManager = user?.role === 'manager';
     const canApprove = can('purchases.approve');
     const [isCreating, setIsCreating] = useState(false);
     const [details, setDetails] = useState(null);
+    const [isDownloading, setIsDownloading] = useState(false);
     const [search, setSearch] = useState('');
     const [query, setQuery] = useState('');
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
+    const [page, setPage] = useState(1);
     const { items, meta, isLoading, error, reload, setError } = useList('/purchases', {
         search: query || undefined,
         date_from: dateFrom || undefined,
         date_to: dateTo || undefined,
-        per_page: 15,
+        page,
+        per_page: 10,
     });
 
     useEffect(() => {
@@ -38,7 +42,11 @@ export default function Purchases() {
         setQuery('');
         setDateFrom('');
         setDateTo('');
+        setPage(1);
     };
+
+    const currentPage = meta?.current_page ?? 1;
+    const perPage = meta?.per_page ?? 10;
 
     const openDetails = async (id) => {
         try {
@@ -59,6 +67,30 @@ export default function Purchases() {
         }
     };
 
+    const downloadPdf = async () => {
+        if (!details) {
+            return;
+        }
+
+        setIsDownloading(true);
+
+        try {
+            const blob = await api(`/purchases/${details.id}/pdf`, { responseType: 'blob' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `purchase-${details.purchase_no}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            setError(e.message);
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
     if (isCreating) {
         return (
             <div className="space-y-4">
@@ -73,7 +105,7 @@ export default function Purchases() {
     return (
         <div className="space-y-4">
             <PageHeader title="Purchases" subtitle={meta ? `${meta.total} purchase orders` : 'Purchase orders awaiting approval'}>
-                {can('purchases.create') && (
+                {isManager && can('purchases.create') && (
                     <button onClick={() => setIsCreating(true)} className={primaryButton}>
                         <FiPlus className="h-4 w-4" /> Add Purchase
                     </button>
@@ -89,7 +121,7 @@ export default function Purchases() {
                             type="search"
                             placeholder="Purchase No, Reference No, Supplier…"
                             value={search}
-                            onChange={(e) => setSearch(e.target.value)}
+                            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                             className="w-full rounded-md border border-slate-300 py-2 pl-9 pr-3 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                         />
                     </div>
@@ -100,7 +132,7 @@ export default function Purchases() {
                         type="date"
                         value={dateFrom}
                         max={dateTo || undefined}
-                        onChange={(e) => setDateFrom(e.target.value)}
+                        onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
                         className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     />
                 </label>
@@ -110,7 +142,7 @@ export default function Purchases() {
                         type="date"
                         value={dateTo}
                         min={dateFrom || undefined}
-                        onChange={(e) => setDateTo(e.target.value)}
+                        onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
                         className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     />
                 </label>
@@ -146,7 +178,7 @@ export default function Purchases() {
             >
                 {items.map((purchase,index) => (
                     <tr key={purchase.id} className="text-center">
-                        <td className="whitespace-nowrap px-4 py-3 font-medium">{index + 1}</td>
+                        <td className="whitespace-nowrap px-4 py-3 font-medium">{(currentPage - 1) * perPage + index + 1}</td>
                         <td className="whitespace-nowrap px-4 py-3">{purchase.purchase_no}</td>
                         <td className="whitespace-nowrap px-4 py-3">{purchase.reference_no ?? '-'}</td>
                         <td className="whitespace-nowrap px-4 py-3">{purchase.purchase_date}</td>
@@ -174,13 +206,44 @@ export default function Purchases() {
                 ))}
             </Table>
 
+            {meta && meta.last_page > 1 && (
+                <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500">
+                        Page {meta.current_page} of {meta.last_page} · {meta.total} orders
+                    </span>
+                    <div className="flex gap-2">
+                        <button
+                            disabled={meta.current_page <= 1}
+                            onClick={() => setPage((current) => current - 1)}
+                            className={secondaryButton}
+                        >
+                            <FiChevronLeft className="h-4 w-4" /> Previous
+                        </button>
+                        <button
+                            disabled={meta.current_page >= meta.last_page}
+                            onClick={() => setPage((current) => current + 1)}
+                            className={secondaryButton}
+                        >
+                            Next <FiChevronRight className="h-4 w-4" />
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {details && (
                 <Modal title={`Purchase ${details.purchase_no}`} onClose={() => setDetails(null)} wide>
-                    <div className="mb-4 grid gap-3 text-sm sm:grid-cols-4">
+                    <div className="mb-4 grid gap-3 text-sm sm:grid-cols-3">
                         <div><span className="text-slate-500">Date</span><div className="font-medium">{details.purchase_date}</div></div>
+                        <div><span className="text-slate-500">Shop</span><div className="font-medium">{details.shop_name ?? '-'}</div></div>
                         <div><span className="text-slate-500">Supplier</span><div className="font-medium">{details.supplier_name ?? '-'}</div></div>
                         <div><span className="text-slate-500">Payment</span><div className="font-medium">{details.payment_type_name ?? '-'}</div></div>
+                        <div><span className="text-slate-500">Reference</span><div className="font-medium">{details.reference_no ?? '-'}</div></div>
                         <div><span className="text-slate-500">Status</span><div className="mt-1"><StatusBadge status={details.status} /></div></div>
+                    </div>
+                    <div className="mb-4 flex justify-end">
+                        <button type="button" onClick={downloadPdf} disabled={isDownloading} className={secondaryButton}>
+                            <FiDownload className="h-4 w-4" /> {isDownloading ? 'Preparing…' : 'Download PDF'}
+                        </button>
                     </div>
                     {details.status === 'approved' && (
                         <p className="mb-4 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">

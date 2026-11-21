@@ -15,31 +15,41 @@ export class ApiError extends Error {
     }
 }
 
-export async function api(path, { method = 'GET', body, params } = {}) {
+export async function api(path, { method = 'GET', body, params, responseType } = {}) {
     const query = params
         ? '?' + new URLSearchParams(Object.entries(params).filter(([, v]) => v !== '' && v != null))
         : '';
+    const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
 
     const response = await fetch(`${BASE}${path}${query}`, {
         method,
         headers: {
-            Accept: 'application/json',
-            ...(body ? { 'Content-Type': 'application/json' } : {}),
+            Accept: responseType === 'blob' ? 'application/pdf' : 'application/json',
+            ...(body && !isFormData ? { 'Content-Type': 'application/json' } : {}),
             ...(tokenStore.get() ? { Authorization: `Bearer ${tokenStore.get()}` } : {}),
         },
-        body: body ? JSON.stringify(body) : undefined,
+        body: isFormData ? body : body ? JSON.stringify(body) : undefined,
     });
-
-    if (response.status === 204) {
-        return null;
-    }
-
-    const payload = await response.json().catch(() => ({}));
 
     if (response.status === 401 && tokenStore.get()) {
         tokenStore.clear();
         window.dispatchEvent(new Event('pos:unauthorized'));
     }
+
+    if (response.status === 204) {
+        return null;
+    }
+
+    if (responseType === 'blob') {
+        if (!response.ok) {
+            const payload = await response.json().catch(() => ({}));
+            throw new ApiError(payload.message ?? 'Something went wrong', response.status, payload.errors);
+        }
+
+        return response.blob();
+    }
+
+    const payload = await response.json().catch(() => ({}));
 
     if (!response.ok) {
         throw new ApiError(payload.message ?? 'Something went wrong', response.status, payload.errors);

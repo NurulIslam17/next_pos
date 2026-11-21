@@ -4,6 +4,7 @@ namespace App\Http\Requests\Product;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\File;
 
 class UpdateProductRequest extends FormRequest
 {
@@ -27,6 +28,10 @@ class UpdateProductRequest extends FormRequest
             'vat' => ['sometimes', 'numeric', 'min:0', 'max:100'],
             'vat_type' => ['sometimes', 'string', 'in:included,excluded'],
             'note' => ['nullable', 'string'],
+            'images' => ['sometimes', 'array', 'max:10'],
+            'images.*' => ['file', File::image()->max('5mb')],
+            'removed_image_ids' => ['sometimes', 'array', 'max:10'],
+            'removed_image_ids.*' => ['integer', Rule::exists('product_images', 'id')->where(fn ($query) => $query->where('product_id', $this->route('product')))],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }

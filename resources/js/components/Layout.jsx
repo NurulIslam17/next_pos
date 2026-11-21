@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { BsUpcScan } from 'react-icons/bs';
-import { FiChevronRight, FiCreditCard, FiGrid, FiKey, FiLogOut, FiPackage, FiSettings, FiShield, FiShoppingBag, FiShoppingCart, FiTag, FiTruck, FiUsers, FiAward } from 'react-icons/fi';
+import { FiActivity, FiChevronRight, FiCreditCard, FiGrid, FiKey, FiLogOut, FiPackage, FiSettings, FiShield, FiShoppingBag, FiShoppingCart, FiTag, FiTruck, FiUsers, FiAward } from 'react-icons/fi';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth';
 
@@ -11,6 +11,7 @@ const roleLabel = (role) =>
 // A group has `children`; a leaf has `to`. `permission` hides items the user cannot view.
 const navigation = [
     { to: '/dashboard', label: 'Dashboard', icon: FiGrid, permission: 'dashboard.view' },
+    { to: '/shop-monitor', label: 'Shop Monitor', icon: FiActivity, permission: 'shop_monitor.view' },
     { to: '/products', label: 'Products', icon: FiPackage, permission: 'products.view' },
     { to: '/purchases', label: 'Purchasing', icon: FiShoppingCart, permission: 'purchases.view' },
     { to: '/categories', label: 'Categories', icon: FiTag, permission: 'categories.view' },

@@ -2,8 +2,10 @@
 
 namespace App\Http\Resources;
 
+use App\Models\ProductImage;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class ProductResource extends JsonResource
 {
@@ -28,6 +30,12 @@ class ProductResource extends JsonResource
             'vat' => $this->vat,
             'vat_type' => $this->vat_type,
             'note' => $this->note,
+            'images' => $this->whenLoaded('images', fn () => $this->images->map(fn (ProductImage $image): array => [
+                'id' => $image->id,
+                'url' => Storage::url($image->path),
+                'original_name' => $image->original_name,
+                'sort_order' => $image->sort_order,
+            ])->values()->all()),
             'is_active' => $this->is_active,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
