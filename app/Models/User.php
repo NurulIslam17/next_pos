@@ -16,7 +16,7 @@ use Spatie\Permission\Traits\HasRoles;
 #[Fillable([
     'name', 'email', 'password', 'shop_id', 'phone', 'nid_number', 'date_of_birth',
     'permanent_address', 'present_address', 'salary_account_name', 'salary_account_number',
-    'bank_name', 'salary', 'joining_date', 'is_active',
+    'bank_name', 'salary', 'joining_date', 'is_active', 'photo_path',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable

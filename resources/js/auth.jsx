@@ -38,8 +38,9 @@ export function AuthProvider({ children }) {
 
     /** True when the signed-in user holds the given permission (super admin holds all of them). */
     const can = useCallback((permission) => Boolean(user?.permissions?.includes(permission)), [user]);
+    const updateUser = useCallback((nextUser) => setUser(nextUser), []);
 
-    return <AuthContext.Provider value={{ user, isLoading, login, logout, can }}>{children}</AuthContext.Provider>;
+    return <AuthContext.Provider value={{ user, isLoading, login, logout, can, updateUser }}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => useContext(AuthContext);

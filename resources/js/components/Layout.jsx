@@ -1,8 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BsUpcScan } from 'react-icons/bs';
-import { FiActivity, FiChevronRight, FiCreditCard, FiGrid, FiKey, FiLogOut, FiPackage, FiSettings, FiShield, FiShoppingBag, FiShoppingCart, FiTag, FiTruck, FiUsers, FiAward } from 'react-icons/fi';
+import { FiActivity, FiChevronDown, FiChevronRight, FiCreditCard, FiGrid, FiKey, FiLogOut, FiPackage, FiSettings, FiShield, FiShoppingBag, FiShoppingCart, FiTag, FiTruck, FiUser, FiUsers, FiAward } from 'react-icons/fi';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth';
+import ChangePasswordForm from './ChangePasswordForm';
+import Modal from './Modal';
+import ProfileForm from './ProfileForm';
+import UserPhoto from './UserPhoto';
 
 const roleLabel = (role) =>
     ({ super_admin: 'Super Admin', manager: 'Shop Manager', viewer: 'Viewer' })[role] ??
@@ -67,7 +71,24 @@ function NavGroup({ group, items }) {
 }
 
 export default function Layout() {
-    const { user, logout, can } = useAuth();
+    const { user, logout, can, updateUser } = useAuth();
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [isPasswordOpen, setIsPasswordOpen] = useState(false);
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    const userMenuRef = useRef(null);
+
+    useEffect(() => {
+        if (!isUserMenuOpen) return;
+
+        const closeOnOutsideClick = (event) => {
+            if (!userMenuRef.current?.contains(event.target)) {
+                setIsUserMenuOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', closeOnOutsideClick);
+        return () => document.removeEventListener('mousedown', closeOnOutsideClick);
+    }, [isUserMenuOpen]);
 
     return (
         <div className="app-shell flex h-screen overflow-hidden">
@@ -98,23 +119,77 @@ export default function Layout() {
             <div className="flex min-h-0 min-w-0 flex-1 flex-col">
                 <header className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 py-3 sm:px-6">
                     <span className="font-semibold md:hidden">My POS</span>
-                    <div className="ml-auto flex items-center gap-4">
-                        <div className="text-right text-sm leading-tight">
-                            <div className="font-medium">{user.name}</div>
-                            <div className="text-xs text-slate-500">
-                                {roleLabel(user.role)}
-                                {user.shop ? ` · ${user.shop}` : ''}
+                    <div className="relative ml-auto" ref={userMenuRef}>
+                        <button
+                            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                            aria-haspopup="menu"
+                            aria-expanded={isUserMenuOpen}
+                            aria-label="Account menu"
+                            className="flex items-center gap-2 rounded-md px-2 py-1 text-right text-sm leading-tight transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40"
+                        >
+                            <div>
+                                <div className="font-medium">{user.name}</div>
+                                <div className="text-xs text-slate-500">
+                                    {roleLabel(user.role)}
+                                    {user.shop ? ` · ${user.shop}` : ''}
+                                </div>
                             </div>
-                        </div>
-                        <button onClick={logout} aria-label="Log out" title="Log out" className="p-1 text-red-600 transition hover:text-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40">
-                            <FiLogOut className="h-7 w-7" />
+                            <UserPhoto user={user} className="h-9 w-9 rounded-full object-cover ring-1 ring-slate-200" />
+                            <FiChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
                         </button>
+
+                        {isUserMenuOpen && (
+                            <div role="menu" className="absolute right-0 z-30 mt-2 w-56 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 text-sm shadow-lg">
+                                <button
+                                    role="menuitem"
+                                    onClick={() => { setIsUserMenuOpen(false); setIsProfileOpen(true); }}
+                                    className="flex w-full items-center gap-2 px-4 py-2 text-left text-slate-700 transition hover:bg-slate-50"
+                                >
+                                    <FiUser className="h-4 w-4 text-slate-400" /> Update Profile
+                                </button>
+                                <button
+                                    role="menuitem"
+                                    onClick={() => { setIsUserMenuOpen(false); setIsPasswordOpen(true); }}
+                                    className="flex w-full items-center gap-2 px-4 py-2 text-left text-slate-700 transition hover:bg-slate-50"
+                                >
+                                    <FiKey className="h-4 w-4 text-slate-400" /> Change Password
+                                </button>
+                                <div className="my-1 border-t border-slate-100" />
+                                <button
+                                    role="menuitem"
+                                    onClick={() => { setIsUserMenuOpen(false); logout(); }}
+                                    className="flex w-full items-center gap-2 px-4 py-2 text-left text-red-600 transition hover:bg-red-50"
+                                >
+                                    <FiLogOut className="h-4 w-4" /> Logout
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </header>
                 <main className="app-main flex-1 overflow-y-auto p-4 sm:p-6">
                     <Outlet />
                 </main>
             </div>
+            {isProfileOpen && (
+                <Modal title="Update profile" onClose={() => setIsProfileOpen(false)}>
+                    <ProfileForm
+                        user={user}
+                        onSaved={(nextUser) => {
+                            updateUser(nextUser);
+                            setIsProfileOpen(false);
+                        }}
+                        onCancel={() => setIsProfileOpen(false)}
+                    />
+                </Modal>
+            )}
+            {isPasswordOpen && (
+                <Modal title="Change password" onClose={() => setIsPasswordOpen(false)}>
+                    <ChangePasswordForm
+                        onSaved={() => setIsPasswordOpen(false)}
+                        onCancel={() => setIsPasswordOpen(false)}
+                    />
+                </Modal>
+            )}
         </div>
     );
 }

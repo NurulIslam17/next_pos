@@ -3,6 +3,7 @@ import { FiChevronLeft, FiChevronRight, FiPlus } from "react-icons/fi";
 import { api } from "../../api";
 import { useAuth } from "../../auth";
 import Modal from "../../components/Modal";
+import UserPhoto from "../../components/UserPhoto";
 import {
     Badge,
     ErrorBanner,
@@ -20,6 +21,23 @@ import {
 
 const titleCase = (value) =>
     value.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+
+const formatDateTime = (value) => {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+    const parts = new Intl.DateTimeFormat("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+    }).formatToParts(date);
+    const part = (type) =>
+        parts.find((item) => item.type === type)?.value ?? "";
+    return `${part("day")} ${part("month")} ${part("year")} at ${part("hour")}:${part("minute")} ${part("dayPeriod").toUpperCase()}`;
+};
 
 function UserForm({ user, roles, shops, onSaved, onCancel }) {
     const isEdit = Boolean(user);
@@ -329,11 +347,13 @@ export default function Users() {
     const showActions = can("users.update") || can("users.delete");
     const columns = [
         { label: "SL" },
+        { label: "Photo" },
         { label: "Name" },
         { label: "Email" },
         { label: "Phone" },
         { label: "Role" },
         { label: "Shop" },
+        { label: "Last updated at" },
         { label: "Status" },
         ...(showActions ? [{ label: "Actions" }] : []),
     ];
@@ -370,6 +390,9 @@ export default function Users() {
                 {items.map((user,index) => (
                     <tr key={user.id} className="hover:bg-slate-50">
                         <td className="px-4 py-3 text-center font-medium">{index + 1}</td>
+                        <td className="px-4 py-3 text-center">
+                            <UserPhoto user={user} className="mx-auto h-10 w-10 rounded-full object-cover ring-1 ring-slate-200" />
+                        </td>
                         <td className="px-4 py-3 text-center font-medium">{user.name}</td>
                         <td className="px-4 py-3 text-center text-slate-600">
                             {user.email}
@@ -390,6 +413,9 @@ export default function Users() {
                         </td>
                         <td className="px-4 py-3 text-center text-slate-600">
                             {user.shop ?? "—"}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 text-center text-slate-600">
+                            {formatDateTime(user.updated_at)}
                         </td>
                         <td className="px-4 py-3 text-center">
                             <Badge tone={user.is_active ? "green" : "slate"}>

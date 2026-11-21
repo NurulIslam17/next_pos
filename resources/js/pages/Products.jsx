@@ -277,12 +277,12 @@ export default function Products() {
             )}
 
             {editing && (
-                <Modal title={editing.id ? 'Edit product' : 'Add product'} onClose={() => setEditing(null)}>
+                <Modal title={editing.id ? 'Edit product' : 'Add product'} onClose={() => setEditing(null)} size="lg">
                     <ProductForm product={editing.id ? editing : null} categories={categories} brands={brands} suppliers={suppliers} onSaved={handleSaved} onCancel={() => setEditing(null)} />
                 </Modal>
             )}
             {details && (
-                <Modal title={`Product details — ${details.name}`} onClose={() => setDetails(null)} wide>
+                <Modal title={`Product details — ${details.name}`} onClose={() => setDetails(null)}>
                     <ProductDetails product={details} />
                 </Modal>
             )}
