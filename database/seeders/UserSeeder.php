@@ -12,6 +12,17 @@ class UserSeeder extends Seeder
 
     public function run(): void
     {
+
+        $cities = [
+            ['code' => 'DHK', 'name' => 'ঢাকা'],
+            ['code' => 'CTG', 'name' => 'চট্টগ্রাম'],
+            ['code' => 'KHL', 'name' => 'খুলনা'],
+            ['code' => 'RAJ', 'name' => 'রাজশাহী'],
+            ['code' => 'SYL', 'name' => 'সিলেট'],
+            ['code' => 'BAR', 'name' => 'বরিশাল'],
+            ['code' => 'RNG', 'name' => 'রংপুর'],
+            ['code' => 'MYM', 'name' => 'ময়মনসিংহ'],
+        ];
         // Super admin: full access across every shop.
         User::updateOrCreate(
             ['email' => 'superadmin@pos.test'],
@@ -27,8 +38,8 @@ class UserSeeder extends Seeder
         // One manager per shop.
         foreach (Shop::orderBy('id')->get() as $i => $shop) {
             User::updateOrCreate(
-                ['email' => 'manager'.($i + 1).'@pos.test'],
-                $this->profile("পরিচালক ({$shop->name})", $i + 1, $shop->id, 35000),
+                ['email' => 'manager' . ($i + 1) . '@pos.test'],
+                $this->profile("পরিচালক - {$cities[$i]['name']}", $i + 1, $shop->id, 35000),
             )->syncRoles('manager');
         }
     }

@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\PaymentTypeController;
 use App\Http\Controllers\Api\V1\PermissionController;
 use App\Http\Controllers\Api\V1\ProductController;
+use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\PurchaseController;
 use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\ShopController;
@@ -24,6 +25,8 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('auth/me', [AuthController::class, 'me']);
         Route::post('auth/logout', [AuthController::class, 'logout']);
+        Route::match(['put', 'patch'], 'profile', [ProfileController::class, 'update']);
+        Route::post('profile/change-password', [ProfileController::class, 'changePassword']);
 
         // Every route below is guarded by a "{module}.{action}" permission.
         Route::get('dashboard', [DashboardController::class, 'index'])->middleware('permission:dashboard.view');

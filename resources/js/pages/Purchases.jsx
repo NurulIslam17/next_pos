@@ -231,7 +231,7 @@ export default function Purchases() {
             )}
 
             {details && (
-                <Modal title={`Purchase ${details.purchase_no}`} onClose={() => setDetails(null)} wide>
+                <Modal title={`Purchase ${details.purchase_no}`} onClose={() => setDetails(null)}>
                     <div className="mb-4 grid gap-3 text-sm sm:grid-cols-3">
                         <div><span className="text-slate-500">Date</span><div className="font-medium">{details.purchase_date}</div></div>
                         <div><span className="text-slate-500">Shop</span><div className="font-medium">{details.shop_name ?? '-'}</div></div>
