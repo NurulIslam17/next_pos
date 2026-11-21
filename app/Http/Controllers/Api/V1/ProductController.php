@@ -44,12 +44,12 @@ class ProductController extends Controller
         return $this->created(new ProductResource($this->products->create([
             ...$request->validated(),
             'created_by_shop_id' => $request->user()->shop_id,
-        ])), 'Product created');
+        ], $request->user()->shop?->code ?? 'SHOP')), 'Product created');
     }
 
     public function update(UpdateProductRequest $request, int $product): JsonResponse
     {
-        return $this->success(new ProductResource($this->products->update($product, $request->validated())), 'Product updated');
+        return $this->success(new ProductResource($this->products->update($product, $request->validated(), $request->user()->shop?->code ?? 'SHOP')), 'Product updated');
     }
 
     public function destroy(int $product): JsonResponse

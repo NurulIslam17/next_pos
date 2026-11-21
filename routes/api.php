@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\PurchaseController;
 use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\ShopController;
+use App\Http\Controllers\Api\V1\ShopMonitorController;
 use App\Http\Controllers\Api\V1\SupplierController;
 use App\Http\Controllers\Api\V1\UserController;
 use Illuminate\Support\Facades\Route;
@@ -26,6 +27,7 @@ Route::prefix('v1')->group(function () {
 
         // Every route below is guarded by a "{module}.{action}" permission.
         Route::get('dashboard', [DashboardController::class, 'index'])->middleware('permission:dashboard.view');
+        Route::get('shop-monitor', [ShopMonitorController::class, 'index'])->middleware('permission:shop_monitor.view');
 
         Route::controller(ProductController::class)->prefix('products')->group(function () {
             Route::get('/', 'index')->middleware('permission:products.view');
@@ -40,6 +42,7 @@ Route::prefix('v1')->group(function () {
         Route::controller(PurchaseController::class)->prefix('purchases')->group(function () {
             Route::get('/', 'index')->middleware('permission:purchases.view');
             Route::get('next-number', 'nextNumber')->middleware('permission:purchases.create');
+            Route::get('{purchase}/pdf', 'downloadPdf')->middleware('permission:purchases.view');
             Route::post('{purchase}/approve', 'approve')->middleware('permission:purchases.approve');
             Route::get('{purchase}', 'show')->middleware('permission:purchases.view');
             Route::post('/', 'store')->middleware('permission:purchases.create');

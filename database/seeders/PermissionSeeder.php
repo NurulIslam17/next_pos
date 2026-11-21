@@ -12,6 +12,7 @@ class PermissionSeeder extends Seeder
     /** @var array<string, list<string>> module => actions */
     public const MODULES = [
         'dashboard' => ['view'],
+        'shop_monitor' => ['view'],
         'products' => ['view', 'create', 'update', 'delete'],
         'purchases' => ['view', 'create', 'approve'],
         'categories' => ['view', 'create', 'update', 'delete'],
@@ -48,7 +49,8 @@ class PermissionSeeder extends Seeder
             'dashboard.view',
             'products.view', 'products.create', 'products.update', 'products.delete',
             'purchases.view', 'purchases.create',
-            'categories.view', 'brands.view', 'barcodes.view', 'shops.view', 'suppliers.view',
+            'categories.view', 'categories.create',
+            'brands.view', 'brands.create', 'barcodes.view', 'shops.view', 'suppliers.view',
             'payment_types.view',
         ]);
 

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { FiSave, FiX } from 'react-icons/fi';
+import { FiImage, FiSave, FiTrash2, FiX } from 'react-icons/fi';
 import { api, ApiError } from '../api';
 import { primaryButton, secondaryButton } from './ui';
 
 const inputClass =
     'mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500';
+const fileInputClass =
+    'mt-1 block w-full text-sm text-slate-500 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100';
 
 function Field({ label, error, children }) {
     return (
@@ -32,11 +34,13 @@ export default function ProductForm({ product, categories, brands, suppliers, on
         note: product?.note ?? '',
         is_active: product?.is_active ?? true,
     });
+    const [existingImages, setExistingImages] = useState(product?.images ?? []);
+    const [newImages, setNewImages] = useState([]);
+    const [removedImageIds, setRemovedImageIds] = useState([]);
     const [errors, setErrors] = useState({});
     const [message, setMessage] = useState('');
     const [isSaving, setIsSaving] = useState(false);
 
-    // New products get an auto-generated code (shop code + date/time + running number).
     useEffect(() => {
         if (product) return;
         api('/products/next-sku')
@@ -44,8 +48,36 @@ export default function ProductForm({ product, categories, brands, suppliers, on
             .catch(() => {});
     }, [product]);
 
+    useEffect(() => () => newImages.forEach(({ url }) => URL.revokeObjectURL(url)), [newImages]);
+
     const set = (key) => (event) =>
         setForm({ ...form, [key]: event.target.type === 'checkbox' ? event.target.checked : event.target.value });
+
+    const handleFiles = (event) => {
+        const files = Array.from(event.target.files ?? []);
+        const usedSlots = existingImages.length - removedImageIds.length + newImages.length;
+        const slots = Math.max(0, 10 - usedSlots);
+
+        if (files.length > slots) {
+            setErrors((current) => ({ ...current, images: ['A product can have at most 10 photos.'] }));
+            event.target.value = '';
+            return;
+        }
+
+        setNewImages((current) => [
+            ...current,
+            ...files.map((file) => ({ file, url: URL.createObjectURL(file) })),
+        ]);
+        event.target.value = '';
+    };
+
+    const removeNewImage = (index) => {
+        setNewImages((current) => current.filter((_, itemIndex) => itemIndex !== index));
+    };
+
+    const removeExistingImage = (id) => {
+        setRemovedImageIds((current) => [...current, id]);
+    };
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -65,11 +97,24 @@ export default function ProductForm({ product, categories, brands, suppliers, on
             vat: form.vat === '' ? 0 : form.vat,
         };
 
+        const formData = new FormData();
+        if (product) {
+            formData.append('_method', 'PUT');
+        }
+        Object.entries(body).forEach(([key, value]) => {
+            formData.append(key, value === null || value === undefined ? '' : typeof value === 'boolean' ? (value ? '1' : '0') : String(value));
+        });
+        newImages.forEach(({ file }) => formData.append('images[]', file));
+        removedImageIds.forEach((id) => formData.append('removed_image_ids[]', id));
+
         try {
-            await api(product ? `/products/${product.id}` : '/products', {
-                method: product ? 'PUT' : 'POST',
-                body,
+            const response = await api(product ? `/products/${product.id}` : '/products', {
+                method: 'POST',
+                body: formData,
             });
+            setExistingImages(response.data?.images ?? []);
+            setNewImages([]);
+            setRemovedImageIds([]);
             onSaved();
         } catch (e) {
             if (e instanceof ApiError) {
@@ -173,6 +218,42 @@ export default function ProductForm({ product, categories, brands, suppliers, on
                 <textarea rows={3} className={inputClass} value={form.note} onChange={set('note')} />
             </Field>
 
+            <Field label="Photos (up to 10)" error={first('images') || first('removed_image_ids')}>
+                <input type="file" multiple accept="image/*" onChange={handleFiles} className={fileInputClass} />
+                {existingImages.some((image) => !removedImageIds.includes(image.id)) || newImages.length ? (
+                    <div className="mt-3 flex flex-wrap gap-3">
+                        {existingImages.filter((image) => !removedImageIds.includes(image.id)).map((image) => (
+                            <div key={image.id} className="relative h-20 w-20 overflow-hidden rounded-lg ring-1 ring-slate-200">
+                                <img src={image.url} alt={image.original_name} className="h-full w-full object-cover" />
+                                <button
+                                    type="button"
+                                    onClick={() => removeExistingImage(image.id)}
+                                    title="Remove photo"
+                                    className="absolute right-1 top-1 rounded bg-white/90 p-1 text-red-600 hover:bg-white"
+                                >
+                                    <FiX className="h-3 w-3" />
+                                </button>
+                            </div>
+                        ))}
+                        {newImages.map(({ file, url }, index) => (
+                            <div key={url} className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg bg-slate-50 ring-1 ring-slate-200">
+                                <img src={url} alt={file.name} className="h-full w-full object-cover" />
+                                <button
+                                    type="button"
+                                    onClick={() => removeNewImage(index)}
+                                    title="Remove photo"
+                                    className="absolute right-1 top-1 rounded bg-white/90 p-1 text-red-600 hover:bg-white"
+                                >
+                                    <FiX className="h-3 w-3" />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="mt-2 flex items-center gap-2 text-xs text-slate-400"><FiImage className="h-4 w-4" /> No photos added.</p>
+                )}
+            </Field>
+
             <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={form.is_active} onChange={set('is_active')} />
                 Active
@@ -183,7 +264,7 @@ export default function ProductForm({ product, categories, brands, suppliers, on
                     <FiX className="h-4 w-4" /> Cancel
                 </button>
                 <button type="submit" disabled={isSaving} className={primaryButton}>
-                    <FiSave className="h-4 w-4" /> {isSaving ? 'Saving…' : 'Save'}
+                    <FiSave className={`h-4 w-4 ${isSaving ? 'animate-pulse' : ''}`} /> {isSaving ? 'Saving…' : 'Save'}
                 </button>
             </div>
         </form>

@@ -23,6 +23,7 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
     public function allForShop(?int $shopId = null): Collection
     {
         return $this->model
+            ->with('images')
             ->when($shopId, fn ($q) => $q->where('created_by_shop_id', $shopId))
             ->orderBy('name')
             ->get();
@@ -31,7 +32,7 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
     public function search(?string $term, int $perPage = 15, ?int $categoryId = null, ?int $shopId = null): LengthAwarePaginator
     {
         return $this->model
-            ->with(['category', 'brand', 'supplier', 'createdByShop'])
+            ->with(['category', 'brand', 'supplier', 'createdByShop', 'images'])
             ->when($term, fn ($q) => $q->where(fn ($q) => $q->where('name', 'like', "%{$term}%")->orWhere('sku', 'like', "%{$term}%")))
             ->when($categoryId, fn ($q) => $q->where('category_id', $categoryId))
             ->when($shopId, fn ($q) => $q->where('created_by_shop_id', $shopId))

@@ -6,16 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Purchase\StorePurchaseRequest;
 use App\Http\Resources\PurchaseResource;
 use App\Models\Shop;
+use App\Services\PurchasePdfService;
 use App\Services\PurchaseService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PurchaseController extends Controller
 {
     use ApiResponse;
 
-    public function __construct(protected PurchaseService $purchases) {}
+    public function __construct(protected PurchaseService $purchases, protected PurchasePdfService $pdf) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -23,11 +25,12 @@ class PurchaseController extends Controller
             'search' => ['nullable', 'string', 'max:255'],
             'date_from' => ['nullable', 'date_format:Y-m-d'],
             'date_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:date_from'],
+            'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
         $purchases = $this->purchases->list(
-            (int) ($filters['per_page'] ?? 15),
+            (int) ($filters['per_page'] ?? 10),
             isset($filters['search']) ? trim($filters['search']) : null,
             $filters['date_from'] ?? null,
             $filters['date_to'] ?? null,
@@ -48,6 +51,17 @@ class PurchaseController extends Controller
     public function show(int $purchase): JsonResponse
     {
         return $this->success(new PurchaseResource($this->purchases->get($purchase)));
+    }
+
+    public function downloadPdf(int $purchase): StreamedResponse
+    {
+        $order = $this->purchases->get($purchase);
+        $content = $this->pdf->generate($order);
+        $fileName = 'purchase-'.preg_replace('/[^A-Za-z0-9_-]/', '_', (string) $order->purchase_no).'.pdf';
+
+        return response()->streamDownload(function () use ($content): void {
+            echo $content;
+        }, $fileName, ['Content-Type' => 'application/pdf']);
     }
 
     public function store(StorePurchaseRequest $request): JsonResponse

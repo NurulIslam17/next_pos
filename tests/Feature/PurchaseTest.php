@@ -243,9 +243,75 @@ class PurchaseTest extends TestCase
             ->assertJsonValidationErrors('date_to');
     }
 
-    private function shop(string $code): Shop
+    public function test_list_paginates_with_ten_items_by_default(): void
     {
-        return Shop::create(['name' => "{$code} Shop", 'code' => $code]);
+        $shop = $this->shop('SHA');
+        $admin = $this->userWithRole('super_admin', null, ['purchases.view']);
+
+        Purchase::factory()->count(12)->create(['shop_id' => $shop->id]);
+
+        $this->actingAs($admin)->getJson('/api/v1/purchases')
+            ->assertOk()
+            ->assertJsonCount(10, 'data')
+            ->assertJsonPath('meta.current_page', 1)
+            ->assertJsonPath('meta.last_page', 2)
+            ->assertJsonPath('meta.per_page', 10)
+            ->assertJsonPath('meta.total', 12);
+
+        $this->actingAs($admin)->getJson('/api/v1/purchases?page=2')
+            ->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('meta.current_page', 2);
+    }
+
+    public function test_list_rejects_invalid_page(): void
+    {
+        $admin = $this->userWithRole('super_admin', null, ['purchases.view']);
+
+        $this->actingAs($admin)->getJson('/api/v1/purchases?page=0')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('page');
+    }
+
+    public function test_authorized_user_can_download_purchase_pdf(): void
+    {
+        $shop = $this->shop('SHA', 'শাহী দোকান');
+        $product = $this->product($shop, 'SKU-PDF', 'Product PDF', 10);
+        $admin = $this->userWithRole('super_admin', null, ['purchases.view']);
+        $purchase = $this->purchase($shop, 'PUR-PDF-001', $product, $admin);
+        $purchase->update(['note' => 'Handle with care']);
+
+        $this->actingAs($admin)->getJson("/api/v1/purchases/{$purchase->id}")
+            ->assertOk()
+            ->assertJsonPath('data.shop_name', 'শাহী দোকান');
+
+        $response = $this->actingAs($admin)->get("/api/v1/purchases/{$purchase->id}/pdf");
+
+        $response->assertOk()
+            ->assertStreamed()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertHeader('Content-Disposition', 'attachment; filename=purchase-PUR-PDF-001.pdf');
+
+        $content = $response->streamedContent();
+        $this->assertStringStartsWith('%PDF-', $content);
+        $this->assertStringContainsString('/Type /Page', $content);
+        $this->assertGreaterThan(1000, strlen($content));
+    }
+
+    public function test_user_without_view_permission_cannot_download_purchase_pdf(): void
+    {
+        $shop = $this->shop('SHA');
+        $product = $this->product($shop, 'SKU-PDF', 'Product PDF', 10);
+        $manager = $this->userWithRole('manager', $shop->id, ['purchases.create']);
+        $purchase = $this->purchase($shop, 'PUR-PDF-002', $product, $manager);
+
+        $this->actingAs($manager)->get("/api/v1/purchases/{$purchase->id}/pdf")
+            ->assertForbidden();
+    }
+
+    private function shop(string $code, ?string $name = null): Shop
+    {
+        return Shop::create(['name' => $name ?: "{$code} Shop", 'code' => $code]);
     }
 
     private function product(Shop $shop, string $sku, string $name, int $stock): Product
