@@ -13,9 +13,9 @@ class PurchaseService
 {
     public function __construct(protected PurchaseRepositoryInterface $purchases) {}
 
-    public function list(int $perPage, ?string $search = null, ?string $dateFrom = null, ?string $dateTo = null): LengthAwarePaginator
+    public function list(int $perPage, ?string $search = null, ?string $dateFrom = null, ?string $dateTo = null, ?string $status = null): LengthAwarePaginator
     {
-        return $this->purchases->paginatePurchases($perPage, $search, $dateFrom, $dateTo);
+        return $this->purchases->paginatePurchases($perPage, $search, $dateFrom, $dateTo, $status);
     }
 
     public function get(int $id): Purchase

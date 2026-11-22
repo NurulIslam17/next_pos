@@ -6,6 +6,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Purchase;
+use App\Models\Sale;
 use App\Models\Shop;
 use App\Models\Supplier;
 use App\Models\User;
@@ -90,6 +91,37 @@ class DashboardTest extends TestCase
             ->assertJsonPath('data.statistics.catalogue.suppliers', 1);
     }
 
+    public function test_reports_stock_availability_and_total_items_in_stock(): void
+    {
+        $user = User::factory()->create();
+        $permission = Permission::findOrCreate('dashboard.view', 'web');
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $user->givePermissionTo($permission);
+
+        Product::create([
+            'name' => 'Available',
+            'sku' => 'AVAILABLE-1',
+            'cost_price' => 10,
+            'price' => 15,
+            'stock' => 8,
+            'is_active' => true,
+        ]);
+        Product::create([
+            'name' => 'Unavailable',
+            'sku' => 'UNAVAILABLE-1',
+            'cost_price' => 10,
+            'price' => 15,
+            'stock' => 0,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($user)->getJson('/api/v1/dashboard')
+            ->assertOk()
+            ->assertJsonPath('data.summary.in_stock_products', 1)
+            ->assertJsonPath('data.summary.out_of_stock_products', 1)
+            ->assertJsonPath('data.summary.total_items_in_stock', 8);
+    }
+
     public function test_returns_purchase_summary_and_recent_purchases(): void
     {
         $user = User::factory()->create();
@@ -139,6 +171,39 @@ class DashboardTest extends TestCase
             ->assertJsonPath('data.statistics.purchases.recent.0.supplier_name', 'Acme Supply');
     }
 
+    public function test_returns_completed_and_returned_sales_amounts(): void
+    {
+        $user = User::factory()->create();
+        $permission = Permission::findOrCreate('dashboard.view', 'web');
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $user->givePermissionTo($permission);
+
+        Sale::factory()->create([
+            'sale_no' => 'SAL-COMPLETED',
+            'sale_date' => '2026-11-18',
+            'status' => 'completed',
+            'total' => 300,
+            'paid_amount' => 300,
+            'due_amount' => 0,
+        ]);
+        Sale::factory()->create([
+            'sale_no' => 'SAL-RETURNED',
+            'sale_date' => '2026-11-19',
+            'status' => 'returned',
+            'total' => 500,
+            'paid_amount' => 500,
+            'due_amount' => 0,
+            'refund_amount' => 500,
+        ]);
+
+        $this->actingAs($user)->getJson('/api/v1/dashboard')
+            ->assertOk()
+            ->assertJsonPath('data.summary.total_sales', 1)
+            ->assertJsonPath('data.summary.total_sales_amount', 300)
+            ->assertJsonPath('data.summary.total_returned_sales', 1)
+            ->assertJsonPath('data.summary.returned_sales_amount', 500);
+    }
+
     public function test_manager_only_sees_own_shop_purchase_metrics(): void
     {
         $shopA = Shop::create(['name' => 'Shop A', 'code' => 'SHA']);
@@ -162,13 +227,32 @@ class DashboardTest extends TestCase
             'total' => 500,
             'due_amount' => 500,
         ]);
+        Sale::factory()->create([
+            'sale_no' => 'SAL-SHA',
+            'shop_id' => $shopA->id,
+            'status' => 'completed',
+            'total' => 150,
+            'paid_amount' => 150,
+            'due_amount' => 0,
+        ]);
+        Sale::factory()->create([
+            'sale_no' => 'SAL-SHB',
+            'shop_id' => $shopB->id,
+            'status' => 'completed',
+            'total' => 750,
+            'paid_amount' => 750,
+            'due_amount' => 0,
+        ]);
 
         $response = $this->actingAs($manager)->getJson('/api/v1/dashboard');
 
         $response->assertOk()
             ->assertJsonPath('data.summary.total_purchases', 1)
             ->assertJsonPath('data.summary.total_purchase_amount', 100)
+            ->assertJsonPath('data.summary.total_sales', 1)
+            ->assertJsonPath('data.summary.total_sales_amount', 150)
             ->assertJsonPath('data.statistics.purchases.recent.0.purchase_no', 'PUR-SHA')
-            ->assertJsonMissing(['purchase_no' => 'PUR-SHB']);
+            ->assertJsonMissing(['purchase_no' => 'PUR-SHB'])
+            ->assertJsonMissing(['sale_no' => 'SAL-SHB']);
     }
 }

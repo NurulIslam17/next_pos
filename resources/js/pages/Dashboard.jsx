@@ -41,7 +41,7 @@ export default function Dashboard() {
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h1 className="text-xl font-semibold text-slate-900">Dashboard</h1>
-                    <p className="mt-1 text-sm text-slate-500">Inventory and purchasing overview across your shop.</p>
+                    <p className="mt-1 text-sm text-slate-500">Inventory, purchasing, and sales overview across your shop.</p>
                 </div>
                 <button
                     type="button"

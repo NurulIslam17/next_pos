@@ -125,7 +125,7 @@ export default function ShopMonitor() {
                 {dateFrom || dateTo ? (
                     <button type="button" onClick={clearDates} className={secondaryButton}>Clear dates</button>
                 ) : null}
-                <p className="w-full text-xs text-slate-400">The date range filters purchase figures; inventory figures show current stock.</p>
+                <p className="w-full text-xs text-slate-400">The date range filters purchase and sales figures; inventory figures show current stock.</p>
             </div>
 
             <SummaryCards summary={summary} />

@@ -6,6 +6,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Purchase;
+use App\Models\Sale;
 use App\Models\Shop;
 use App\Models\Supplier;
 use App\Models\User;
@@ -117,6 +118,43 @@ class ShopMonitorTest extends TestCase
             'total' => 500,
             'due_amount' => 500,
         ]);
+        Sale::factory()->create([
+            'shop_id' => $shopA->id,
+            'sale_no' => 'SAL-A-IN',
+            'sale_date' => '2026-11-18',
+            'status' => 'completed',
+            'total' => 250,
+            'paid_amount' => 250,
+            'due_amount' => 0,
+        ]);
+        Sale::factory()->create([
+            'shop_id' => $shopA->id,
+            'sale_no' => 'SAL-A-OUT',
+            'sale_date' => '2026-11-10',
+            'status' => 'completed',
+            'total' => 900,
+            'paid_amount' => 900,
+            'due_amount' => 0,
+        ]);
+        Sale::factory()->create([
+            'shop_id' => $shopA->id,
+            'sale_no' => 'SAL-A-RETURNED',
+            'sale_date' => '2026-11-19',
+            'status' => 'returned',
+            'total' => 750,
+            'paid_amount' => 750,
+            'due_amount' => 0,
+            'refund_amount' => 750,
+        ]);
+        Sale::factory()->create([
+            'shop_id' => $shopB->id,
+            'sale_no' => 'SAL-B-IN',
+            'sale_date' => '2026-11-17',
+            'status' => 'completed',
+            'total' => 800,
+            'paid_amount' => 800,
+            'due_amount' => 0,
+        ]);
 
         $response = $this->actingAs($user)->getJson('/api/v1/shop-monitor?'.http_build_query([
             'shop_id' => $shopA->id,
@@ -131,6 +169,9 @@ class ShopMonitorTest extends TestCase
             ->assertJsonPath('data.period.date_to', '2026-11-20')
             ->assertJsonPath('data.summary.total_products', 1)
             ->assertJsonPath('data.summary.active_products', 1)
+            ->assertJsonPath('data.summary.in_stock_products', 1)
+            ->assertJsonPath('data.summary.out_of_stock_products', 0)
+            ->assertJsonPath('data.summary.total_items_in_stock', 5)
             ->assertJsonPath('data.summary.low_stock_products', 1)
             ->assertJsonPath('data.summary.total_stock_value', 50)
             ->assertJsonPath('data.chart.products_by_category.0.name', 'Drinks')
@@ -138,6 +179,10 @@ class ShopMonitorTest extends TestCase
             ->assertJsonPath('data.summary.total_purchases', 1)
             ->assertJsonPath('data.summary.approved_purchases', 1)
             ->assertJsonPath('data.summary.total_purchase_amount', 100)
+            ->assertJsonPath('data.summary.total_sales', 1)
+            ->assertJsonPath('data.summary.total_sales_amount', 250)
+            ->assertJsonPath('data.summary.total_returned_sales', 1)
+            ->assertJsonPath('data.summary.returned_sales_amount', 750)
             ->assertJsonPath('data.statistics.purchases.total_due', 20)
             ->assertJsonPath('data.statistics.purchases.recent.0.purchase_no', 'PUR-A-IN')
             ->assertJsonPath('data.statistics.catalogue.categories', 1)

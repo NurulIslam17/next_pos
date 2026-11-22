@@ -71,16 +71,36 @@ class PurchaseTest extends TestCase
         $this->assertNotNull($purchase->fresh()->approved_at);
     }
 
+    public function test_requires_payment_type_and_paid_amount(): void
+    {
+        $shop = $this->shop('SHA');
+        $product = $this->product($shop, 'SKU-A', 'Product A', 5);
+        $manager = $this->userWithRole('manager', $shop->id, ['purchases.create']);
+
+        $this->actingAs($manager)->postJson('/api/v1/purchases', [
+            'purchase_date' => '2026-11-20',
+            'items' => [
+                ['product_id' => $product->id, 'quantity' => 1, 'unit_cost' => 10],
+            ],
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['payment_type_id', 'paid_amount']);
+
+        $this->assertDatabaseCount('purchases', 0);
+    }
+
     public function test_manager_cannot_purchase_product_from_another_shop(): void
     {
         $ownShop = $this->shop('SHA');
         $otherShop = $this->shop('SHB');
         $otherProduct = $this->product($otherShop, 'SKU-B', 'Product B', 3);
+        $paymentType = PaymentType::create(['name' => 'Cash', 'code' => 'cash']);
         $user = $this->userWithRole('manager', $ownShop->id, ['purchases.view', 'purchases.create']);
 
         $this->actingAs($user)->postJson('/api/v1/purchases', [
             'purchase_date' => '2026-11-20',
             'shop_id' => $ownShop->id,
+            'payment_type_id' => $paymentType->id,
+            'paid_amount' => 10,
             'items' => [
                 ['product_id' => $otherProduct->id, 'quantity' => 1, 'unit_cost' => 10],
             ],
@@ -232,6 +252,40 @@ class PurchaseTest extends TestCase
             ->assertJsonFragment(['purchase_no' => 'PUR-TO'])
             ->assertJsonMissing(['purchase_no' => 'PUR-OLD'])
             ->assertJsonMissing(['purchase_no' => 'PUR-NEW']);
+    }
+
+    /** @return array<string, array{string, string}> */
+    public static function purchaseStatuses(): array
+    {
+        return [
+            'pending' => ['pending', 'PUR-PENDING'],
+            'approved' => ['approved', 'PUR-APPROVED'],
+        ];
+    }
+
+    #[DataProvider('purchaseStatuses')]
+    public function test_list_filters_purchases_by_status(string $status, string $expectedPurchaseNo): void
+    {
+        $shop = $this->shop('SHA');
+        $admin = $this->userWithRole('super_admin', null, ['purchases.view']);
+
+        Purchase::factory()->create(['purchase_no' => 'PUR-PENDING', 'shop_id' => $shop->id, 'status' => 'pending']);
+        Purchase::factory()->create(['purchase_no' => 'PUR-APPROVED', 'shop_id' => $shop->id, 'status' => 'approved']);
+
+        $this->actingAs($admin)->getJson('/api/v1/purchases?status='.$status)
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.purchase_no', $expectedPurchaseNo);
+    }
+
+    public function test_list_rejects_invalid_status(): void
+    {
+        $admin = $this->userWithRole('super_admin', null, ['purchases.view']);
+
+        $this->actingAs($admin)->getJson('/api/v1/purchases?status=returned')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['status' => 'The selected status is invalid.']);
     }
 
     public function test_list_rejects_date_range_when_end_is_before_start(): void

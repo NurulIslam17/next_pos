@@ -24,6 +24,11 @@ class CustomerController extends Controller
         ));
     }
 
+    public function all(): JsonResponse
+    {
+        return $this->success(CustomerResource::collection($this->customers->all()));
+    }
+
     public function store(StoreCustomerRequest $request): JsonResponse
     {
         return $this->created(new CustomerResource($this->customers->create([

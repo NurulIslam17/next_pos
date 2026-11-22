@@ -6,6 +6,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Purchase;
+use App\Models\Sale;
 use App\Models\Supplier;
 
 class DashboardService
@@ -21,6 +22,10 @@ class DashboardService
         $lowStock = (clone $products)
             ->where('stock_alert', '>', 0)
             ->whereColumn('stock', '<=', 'stock_alert');
+
+        $stockTotals = (clone $products)
+            ->selectRaw('COUNT(CASE WHEN products.stock > 0 THEN 1 END) as in_stock_products, COUNT(CASE WHEN products.stock <= 0 THEN 1 END) as out_of_stock_products, COALESCE(SUM(CASE WHEN products.stock > 0 THEN products.stock ELSE 0 END), 0) as total_items_in_stock')
+            ->first();
 
         $byCategory = (clone $products)
             ->leftJoin('categories', 'categories.id', '=', 'products.category_id')
@@ -65,6 +70,21 @@ class DashboardService
             ])
             ->all();
 
+        $sales = Sale::query();
+        if ($shopId !== null) {
+            $sales->where('sales.shop_id', $shopId);
+        }
+        if ($dateFrom !== null) {
+            $sales->whereDate('sales.sale_date', '>=', $dateFrom);
+        }
+        if ($dateTo !== null) {
+            $sales->whereDate('sales.sale_date', '<=', $dateTo);
+        }
+
+        $saleTotals = (clone $sales)
+            ->selectRaw("COUNT(CASE WHEN sales.status = 'completed' THEN 1 END) as total_count, COALESCE(SUM(CASE WHEN sales.status = 'completed' THEN sales.total ELSE 0 END), 0) as total_amount, COUNT(CASE WHEN sales.status = 'returned' THEN 1 END) as returned_count, COALESCE(SUM(CASE WHEN sales.status = 'returned' THEN sales.refund_amount ELSE 0 END), 0) as returned_amount")
+            ->first();
+
         $catalogue = $shopId !== null
             ? [
                 'categories' => (int) (clone $products)->distinct()->count('products.category_id'),
@@ -82,12 +102,19 @@ class DashboardService
                 'total_products' => (clone $products)->count(),
                 'active_products' => (clone $products)->where('is_active', true)->count(),
                 'inactive_products' => (clone $products)->where('is_active', false)->count(),
+                'in_stock_products' => (int) $stockTotals->in_stock_products,
+                'out_of_stock_products' => (int) $stockTotals->out_of_stock_products,
+                'total_items_in_stock' => (int) $stockTotals->total_items_in_stock,
                 'low_stock_products' => (clone $lowStock)->count(),
                 'total_stock_value' => (float) ((clone $products)->selectRaw('SUM(products.stock * products.cost_price) as total')->value('total') ?: 0),
                 'total_purchases' => (int) $purchaseTotals->total_count,
                 'pending_purchases' => (int) $purchaseTotals->pending_count,
                 'approved_purchases' => (int) $purchaseTotals->approved_count,
                 'total_purchase_amount' => (float) $purchaseTotals->total_amount,
+                'total_sales' => (int) $saleTotals->total_count,
+                'total_sales_amount' => (float) $saleTotals->total_amount,
+                'total_returned_sales' => (int) $saleTotals->returned_count,
+                'returned_sales_amount' => (float) $saleTotals->returned_amount,
             ],
             'chart' => [
                 'products_by_category' => $byCategory,

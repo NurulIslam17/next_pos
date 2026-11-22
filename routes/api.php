@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\PurchaseController;
 use App\Http\Controllers\Api\V1\RoleController;
+use App\Http\Controllers\Api\V1\SaleController;
 use App\Http\Controllers\Api\V1\ShopController;
 use App\Http\Controllers\Api\V1\ShopMonitorController;
 use App\Http\Controllers\Api\V1\SupplierController;
@@ -52,6 +53,15 @@ Route::prefix('v1')->group(function () {
             Route::post('/', 'store')->middleware('permission:purchases.create');
         });
 
+        Route::controller(SaleController::class)->prefix('sales')->group(function () {
+            Route::get('/', 'index')->middleware('permission:sales.view');
+            Route::get('next-number', 'nextNumber')->middleware('permission:sales.create');
+            Route::get('{sale}/pdf', 'downloadPdf')->middleware('permission:sales.view');
+            Route::post('{sale}/return', 'returnSale')->middleware('permission:sales.return');
+            Route::get('{sale}', 'show')->middleware('permission:sales.view');
+            Route::post('/', 'store')->middleware('permission:sales.create');
+        });
+
         Route::controller(CategoryController::class)->prefix('categories')->group(function () {
             Route::get('/', 'index')->middleware('permission:categories.view');
             Route::get('all', 'all')->middleware('permission:categories.view');
@@ -83,6 +93,7 @@ Route::prefix('v1')->group(function () {
 
         Route::controller(CustomerController::class)->prefix('customers')->group(function () {
             Route::get('/', 'index')->middleware('permission:customers.view');
+            Route::get('all', 'all')->middleware('permission:customers.view');
             Route::post('/', 'store')->middleware('permission:customers.create');
             Route::match(['put', 'patch'], '{customer}', 'update')->middleware('permission:customers.update');
             Route::delete('{customer}', 'destroy')->middleware('permission:customers.delete');

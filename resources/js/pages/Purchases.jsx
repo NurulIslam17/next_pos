@@ -23,11 +23,13 @@ export default function Purchases() {
     const [query, setQuery] = useState('');
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
+    const [status, setStatus] = useState('');
     const [page, setPage] = useState(1);
     const { items, meta, isLoading, error, reload, setError } = useList('/purchases', {
         search: query || undefined,
         date_from: dateFrom || undefined,
         date_to: dateTo || undefined,
+        status: status || undefined,
         page,
         per_page: 10,
     });
@@ -42,6 +44,7 @@ export default function Purchases() {
         setQuery('');
         setDateFrom('');
         setDateTo('');
+        setStatus('');
         setPage(1);
     };
 
@@ -146,7 +149,19 @@ export default function Purchases() {
                         className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     />
                 </label>
-                {search || query || dateFrom || dateTo ? (
+                <label className="w-44">
+                    <span className="mb-1 block text-xs font-medium text-slate-500">Status</span>
+                    <select
+                        value={status}
+                        onChange={(e) => { setStatus(e.target.value); setPage(1); }}
+                        className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    >
+                        <option value="">All statuses</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                    </select>
+                </label>
+                {search || query || dateFrom || dateTo || status ? (
                     <button
                         type="button"
                         onClick={clearFilters}

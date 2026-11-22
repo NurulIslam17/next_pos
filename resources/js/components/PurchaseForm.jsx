@@ -28,6 +28,76 @@ function calculate(item) {
     return { base, discount, vat, total: round2(base - discount + vat) };
 }
 
+function RequiredLabel({ children }) {
+    return (
+        <>
+            {children} <span className="text-red-600">*</span>
+        </>
+    );
+}
+
+const isPresent = (value) =>
+    value !== "" && value !== null && value !== undefined;
+const isNumber = (value) =>
+    isPresent(value) && Number.isFinite(Number(value));
+
+function validatePurchase(form, items) {
+    const errors = {};
+
+    if (!isPresent(form.purchase_date)) {
+        errors.purchase_date = ["Purchase date is required."];
+    }
+    if (!isPresent(form.supplier_id)) {
+        errors.supplier_id = ["Supplier is required."];
+    }
+    if (!isPresent(form.shop_id)) {
+        errors.shop_id = ["Shop is required."];
+    }
+    if (!isPresent(form.payment_type_id)) {
+        errors.payment_type_id = ["Payment type is required."];
+    }
+    if (!isPresent(form.paid_amount)) {
+        errors.paid_amount = ["Paid amount is required."];
+    } else if (!isNumber(form.paid_amount) || Number(form.paid_amount) < 0) {
+        errors.paid_amount = ["Paid amount must be zero or greater."];
+    }
+
+    if (items.length === 0) {
+        errors.items = ["Add at least one product."];
+    }
+
+    items.forEach((item, index) => {
+        const prefix = `items.${index}`;
+
+        if (
+            !isNumber(item.quantity) ||
+            !Number.isInteger(Number(item.quantity)) ||
+            Number(item.quantity) < 1
+        ) {
+            errors[`${prefix}.quantity`] = ["Quantity must be at least 1."];
+        }
+        if (!isNumber(item.unit_cost) || Number(item.unit_cost) < 0) {
+            errors[`${prefix}.unit_cost`] = [
+                "Unit cost must be zero or greater.",
+            ];
+        }
+        if (
+            !isNumber(item.vat_rate) ||
+            Number(item.vat_rate) < 0 ||
+            Number(item.vat_rate) > 100
+        ) {
+            errors[`${prefix}.vat_rate`] = ["VAT must be between 0 and 100."];
+        }
+        if (!isNumber(item.discount) || Number(item.discount) < 0) {
+            errors[`${prefix}.discount`] = [
+                "Discount must be zero or greater.",
+            ];
+        }
+    });
+
+    return errors;
+}
+
 export default function PurchaseForm({ onSaved, onCancel }) {
     const { user } = useAuth();
     const isManager = user?.role === "manager";
@@ -49,7 +119,24 @@ export default function PurchaseForm({ onSaved, onCancel }) {
     const [shops, setShops] = useState([]);
     const [paymentTypes, setPaymentTypes] = useState([]);
     const [productError, setProductError] = useState("");
+    const [validationErrors, setValidationErrors] = useState({});
+    const [validationMessage, setValidationMessage] = useState("");
     const { message, isSaving, submit, first } = useSubmit();
+
+    const fieldError = (key) => validationErrors[key]?.[0] ?? first(key);
+    const inputClassFor = (key, extra = "") =>
+        `${fieldError(key) ? `${inputClass} border-red-500 focus:border-red-500 focus:ring-red-500` : inputClass} ${extra}`.trim();
+    const clearValidationErrors = (key) => {
+        setValidationErrors((current) =>
+            Object.fromEntries(
+                Object.entries(current).filter(
+                    ([errorKey]) =>
+                        errorKey !== key && !errorKey.startsWith(`${key}.`),
+                ),
+            ),
+        );
+        setValidationMessage("");
+    };
 
     useEffect(() => {
         Promise.all([api("/suppliers"), api("/shops"), api("/payment-types")])
@@ -99,16 +186,24 @@ export default function PurchaseForm({ onSaved, onCancel }) {
         );
         const vat = round2(rows.reduce((sum, row) => sum + row.vat, 0));
         const total = round2(subtotal - discount + vat);
-        const paid = Number(form.paid_amount) || 0;
         return {
             subtotal,
             discount,
             vat,
             total,
-            paid,
-            due: round2(Math.max(total - paid, 0)),
+            paid: total,
+            due: 0,
         };
-    }, [items, form.paid_amount]);
+    }, [items]);
+
+    useEffect(() => {
+        const paidAmount = totals.total.toFixed(2);
+        setForm((current) =>
+            current.paid_amount === paidAmount
+                ? current
+                : { ...current, paid_amount: paidAmount },
+        );
+    }, [totals.total]);
 
     const filteredProducts = useMemo(() => {
         const term = productSearch.trim().toLowerCase();
@@ -123,20 +218,25 @@ export default function PurchaseForm({ onSaved, onCancel }) {
         );
     }, [availableProducts, productSearch]);
 
-    const setField = (key, value) =>
+    const setField = (key, value) => {
         setForm((current) => ({ ...current, [key]: value }));
-    const updateItem = (key, changes) =>
+        clearValidationErrors(key);
+    };
+    const updateItem = (key, changes) => {
         setItems((current) =>
             current.map((item) =>
                 item.key === key ? { ...item, ...changes } : item,
             ),
         );
+        clearValidationErrors("items");
+    };
 
     const addProduct = (product) => {
         if (items.some((item) => item.product_id === product.id)) {
             return;
         }
 
+        clearValidationErrors("items");
         setItems((current) => [
             ...current,
             {
@@ -155,7 +255,15 @@ export default function PurchaseForm({ onSaved, onCancel }) {
 
     const handleSubmit = (event) => {
         event.preventDefault();
-        if (items.length === 0) {
+        const errors = validatePurchase(form, items);
+        setValidationErrors(errors);
+        setValidationMessage(
+            Object.keys(errors).length > 0
+                ? "Please fix the highlighted fields."
+                : "",
+        );
+
+        if (Object.keys(errors).length > 0) {
             return;
         }
 
@@ -167,7 +275,7 @@ export default function PurchaseForm({ onSaved, onCancel }) {
                     supplier_id: form.supplier_id || null,
                     shop_id: form.shop_id || null,
                     payment_type_id: form.payment_type_id || null,
-                    paid_amount: Number(form.paid_amount) || 0,
+                    paid_amount: totals.total,
                     items: items.map(({ key: _key, ...item }) => ({
                         ...item,
                         quantity: Number(item.quantity),
@@ -182,7 +290,7 @@ export default function PurchaseForm({ onSaved, onCancel }) {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
             <div className="rounded-xl bg-white p-5 ring-1 ring-slate-200">
                 <h2 className="mb-4 text-base font-semibold">
                     Purchase Information
@@ -192,7 +300,7 @@ export default function PurchaseForm({ onSaved, onCancel }) {
                     সংরক্ষিত হবে। সুপার অ্যাডমিনের অনুমোদন সম্পন্ন হওয়ার পর
                     স্টকের পরিমাণ হালনাগাদ(Update) করা হবে।
                 </p>
-                <ErrorBanner message={message} />
+                <ErrorBanner message={validationMessage || message} />
                 <div className="grid gap-4 md:grid-cols-3">
                     <Field label="Purchase No">
                         <input
@@ -201,23 +309,31 @@ export default function PurchaseForm({ onSaved, onCancel }) {
                             className={`${inputClass} bg-slate-50`}
                         />
                     </Field>
-                    <Field label="Purchase Date" error={first("purchase_date")}>
+                    <Field
+                        label={<RequiredLabel>Purchase Date</RequiredLabel>}
+                        error={fieldError("purchase_date")}
+                    >
                         <input
                             type="date"
+                            required
                             value={form.purchase_date}
                             onChange={(event) =>
                                 setField("purchase_date", event.target.value)
                             }
-                            className={inputClass}
+                            className={inputClassFor("purchase_date")}
                         />
                     </Field>
-                    <Field label="Supplier" error={first("supplier_id")}>
+                    <Field
+                        label={<RequiredLabel>Supplier</RequiredLabel>}
+                        error={fieldError("supplier_id")}
+                    >
                         <select
                             value={form.supplier_id}
+                            required
                             onChange={(event) =>
                                 setField("supplier_id", event.target.value)
                             }
-                            className={inputClass}
+                            className={inputClassFor("supplier_id")}
                         >
                             <option value="">Select supplier</option>
                             {suppliers.map((supplier) => (
@@ -227,16 +343,24 @@ export default function PurchaseForm({ onSaved, onCancel }) {
                             ))}
                         </select>
                     </Field>
-                    <Field label="Shop" error={first("shop_id")}>
+                    <Field
+                        label={<RequiredLabel>Shop</RequiredLabel>}
+                        error={fieldError("shop_id")}
+                    >
                         <select
                             value={form.shop_id}
+                            required
                             disabled={isManager}
                             onChange={(event) => {
                                 setField("shop_id", event.target.value);
                                 setItems([]);
                                 setProductSearch("");
+                                clearValidationErrors("items");
                             }}
-                            className={`${inputClass} disabled:bg-slate-50`}
+                            className={inputClassFor(
+                                "shop_id",
+                                "disabled:bg-slate-50",
+                            )}
                         >
                             <option value="">
                                 {isManager
@@ -260,15 +384,16 @@ export default function PurchaseForm({ onSaved, onCancel }) {
                         </select>
                     </Field>
                     <Field
-                        label="Payment Type"
-                        error={first("payment_type_id")}
+                        label={<RequiredLabel>Payment Type</RequiredLabel>}
+                        error={fieldError("payment_type_id")}
                     >
                         <select
                             value={form.payment_type_id}
+                            required
                             onChange={(event) =>
                                 setField("payment_type_id", event.target.value)
                             }
-                            className={inputClass}
+                            className={inputClassFor("payment_type_id")}
                         >
                             <option value="">Select payment type</option>
                             {paymentTypes.map((type) => (
@@ -287,17 +412,25 @@ export default function PurchaseForm({ onSaved, onCancel }) {
                             className={inputClass}
                         />
                     </Field>
-                    <Field label="Paid Amount" error={first("paid_amount")}>
+                    <Field
+                        label={<RequiredLabel>Paid Amount</RequiredLabel>}
+                        error={fieldError("paid_amount")}
+                    >
                         <input
                             type="number"
                             min="0"
                             step="0.01"
+                            required
+                            readOnly
                             value={form.paid_amount}
-                            onChange={(event) =>
-                                setField("paid_amount", event.target.value)
-                            }
-                            className={inputClass}
+                            className={inputClassFor(
+                                "paid_amount",
+                                "bg-slate-50",
+                            )}
                         />
+                        <span className="mt-1 block text-xs font-normal text-slate-500">
+                            Auto-filled from Grand Total.
+                        </span>
                     </Field>
                     <Field label="Note" error={first("note")}>
                         <input
@@ -322,7 +455,7 @@ export default function PurchaseForm({ onSaved, onCancel }) {
                             filled from the selling price.
                         </p>
                     </div>
-                    <ErrorBanner message={first("items")} />
+                    <ErrorBanner message={fieldError("items")} />
                 </div>
                 <ErrorBanner message={productError} />
 
@@ -414,14 +547,30 @@ export default function PurchaseForm({ onSaved, onCancel }) {
                                     Add products from the product list.
                                 </p>
                             )}
-                            {items.map((item) => {
+                            {items.map((item, index) => {
                                 const row = calculate(item);
                                 const isLocked = Number(item.stock) > 0;
-                                const disabledInputClass = `${inputClass} disabled:bg-slate-50 disabled:text-slate-500`;
+                                const itemError = (field) =>
+                                    fieldError(`items.${index}.${field}`);
+                                const itemInputClass = (field) =>
+                                    inputClassFor(
+                                        `items.${index}.${field}`,
+                                        "disabled:bg-slate-50 disabled:text-slate-500",
+                                    );
+                                const hasItemError = [
+                                    "quantity",
+                                    "unit_cost",
+                                    "vat_rate",
+                                    "discount",
+                                ].some((field) => itemError(field));
                                 return (
                                     <div
                                         key={item.key}
-                                        className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-3 lg:flex-nowrap"
+                                        className={`flex flex-wrap items-end gap-3 rounded-lg border bg-white p-3 lg:flex-nowrap ${
+                                            hasItemError
+                                                ? "border-red-300"
+                                                : "border-slate-200"
+                                        }`}
                                     >
                                         <div className="min-w-[160px] flex-1">
                                             <div className="flex items-center gap-1.5 truncate text-sm font-medium">
@@ -438,72 +587,121 @@ export default function PurchaseForm({ onSaved, onCancel }) {
                                             </div>
                                         </div>
                                         <label className="w-20 shrink-0 text-xs font-medium text-slate-500">
-                                            Qty
+                                            <RequiredLabel>Qty</RequiredLabel>
                                             <input
                                                 type="number"
                                                 min="1"
+                                                step="1"
+                                                required
                                                 value={item.quantity}
                                                 disabled={isLocked}
+                                                aria-invalid={Boolean(
+                                                    itemError("quantity"),
+                                                )}
                                                 onChange={(event) =>
                                                     updateItem(item.key, {
                                                         quantity:
                                                             event.target.value,
                                                     })
                                                 }
-                                                className={disabledInputClass}
+                                                className={itemInputClass(
+                                                    "quantity",
+                                                )}
                                             />
+                                            {itemError("quantity") && (
+                                                <span className="mt-1 block text-xs font-normal text-red-600">
+                                                    {itemError("quantity")}
+                                                </span>
+                                            )}
                                         </label>
                                         <label className="w-28 shrink-0 text-xs font-medium text-slate-500">
-                                            Unit Cost
+                                            <RequiredLabel>
+                                                Unit Cost
+                                            </RequiredLabel>
                                             <input
                                                 type="number"
                                                 min="0"
                                                 step="0.01"
+                                                required
                                                 value={item.unit_cost}
                                                 disabled={isLocked}
+                                                aria-invalid={Boolean(
+                                                    itemError("unit_cost"),
+                                                )}
                                                 onChange={(event) =>
                                                     updateItem(item.key, {
                                                         unit_cost:
                                                             event.target.value,
                                                     })
                                                 }
-                                                className={disabledInputClass}
+                                                className={itemInputClass(
+                                                    "unit_cost",
+                                                )}
                                             />
+                                            {itemError("unit_cost") && (
+                                                <span className="mt-1 block text-xs font-normal text-red-600">
+                                                    {itemError("unit_cost")}
+                                                </span>
+                                            )}
                                         </label>
                                         <label className="w-20 shrink-0 text-xs font-medium text-slate-500">
-                                            VAT %
+                                            <RequiredLabel>VAT %</RequiredLabel>
                                             <input
                                                 type="number"
                                                 min="0"
                                                 max="100"
                                                 step="0.01"
+                                                required
                                                 value={item.vat_rate}
                                                 disabled={isLocked}
+                                                aria-invalid={Boolean(
+                                                    itemError("vat_rate"),
+                                                )}
                                                 onChange={(event) =>
                                                     updateItem(item.key, {
                                                         vat_rate:
                                                             event.target.value,
                                                     })
                                                 }
-                                                className={disabledInputClass}
+                                                className={itemInputClass(
+                                                    "vat_rate",
+                                                )}
                                             />
+                                            {itemError("vat_rate") && (
+                                                <span className="mt-1 block text-xs font-normal text-red-600">
+                                                    {itemError("vat_rate")}
+                                                </span>
+                                            )}
                                         </label>
                                         <label className="w-28 shrink-0 text-xs font-medium text-slate-500">
-                                            Discount
+                                            <RequiredLabel>
+                                                Discount
+                                            </RequiredLabel>
                                             <input
                                                 type="number"
                                                 min="0"
                                                 step="0.01"
+                                                required
                                                 value={item.discount}
                                                 disabled={isLocked}
+                                                aria-invalid={Boolean(
+                                                    itemError("discount"),
+                                                )}
                                                 onChange={(event) =>
                                                     updateItem(item.key, {
                                                         discount:
                                                             event.target.value,
                                                     })
                                                 }
-                                                className={disabledInputClass}
+                                                className={itemInputClass(
+                                                    "discount",
+                                                )}
                                             />
+                                            {itemError("discount") && (
+                                                <span className="mt-1 block text-xs font-normal text-red-600">
+                                                    {itemError("discount")}
+                                                </span>
+                                            )}
                                         </label>
                                         <div className="w-24 shrink-0 text-right">
                                             <div className="text-xs text-slate-500">
@@ -576,7 +774,7 @@ export default function PurchaseForm({ onSaved, onCancel }) {
                 </button>
                 <button
                     type="submit"
-                    disabled={isSaving || items.length === 0}
+                    disabled={isSaving}
                     className={primaryButton}
                 >
                     {isSaving ? "Saving…" : "Create Purchase Order"}

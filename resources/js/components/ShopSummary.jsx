@@ -1,4 +1,4 @@
-import { FiAlertTriangle, FiBox, FiCheckCircle, FiClock, FiCreditCard, FiDollarSign, FiLayers, FiPackage, FiShoppingBag, FiTag, FiTruck } from 'react-icons/fi';
+import { FiAlertTriangle, FiBox, FiCheckCircle, FiClock, FiCreditCard, FiDollarSign, FiLayers, FiPackage, FiRotateCcw, FiShoppingBag, FiTag, FiTruck, FiTrendingUp } from 'react-icons/fi';
 
 export const palette = ['#4f46e5', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b', '#ec4899'];
 export const money = (value) => Number(value ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -171,6 +171,8 @@ export function SummaryCards({ summary }) {
     return (
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <SummaryCard icon={FiPackage} label="Total products" value={number(summary.total_products)} hint="All catalogue items" tone="bg-indigo-50 text-indigo-600" />
+            <SummaryCard icon={FiBox} label="In stock" value={number(summary.in_stock_products)} hint={`${number(summary.out_of_stock_products)} out of stock`} tone="bg-emerald-50 text-emerald-600" />
+            <SummaryCard icon={FiLayers} label="Total items in stock" value={number(summary.total_items_in_stock)} hint="Units available" tone="bg-teal-50 text-teal-600" />
             <SummaryCard icon={FiDollarSign} label="Stock value" value={money(summary.total_stock_value)} hint="Based on cost price" tone="bg-emerald-50 text-emerald-600" />
             <SummaryCard icon={FiAlertTriangle} label="Low stock" value={number(summary.low_stock_products)} hint="At or below alert level" tone="bg-red-50 text-red-600" />
             <SummaryCard icon={FiCheckCircle} label="Active products" value={number(summary.active_products)} hint={`${number(summary.inactive_products)} inactive`} tone="bg-sky-50 text-sky-600" />
@@ -178,6 +180,8 @@ export function SummaryCards({ summary }) {
             <SummaryCard icon={FiClock} label="Pending approval" value={number(summary.pending_purchases)} hint="Awaiting approval" tone="bg-amber-50 text-amber-600" />
             <SummaryCard icon={FiCheckCircle} label="Approved purchases" value={number(summary.approved_purchases)} hint="Stock already received" tone="bg-emerald-50 text-emerald-600" />
             <SummaryCard icon={FiCreditCard} label="Purchase amount" value={money(summary.total_purchase_amount)} hint="All purchase orders" tone="bg-indigo-50 text-indigo-600" />
+            <SummaryCard icon={FiTrendingUp} label="Sales amount" value={money(summary.total_sales_amount)} hint={`${number(summary.total_sales)} completed sales`} tone="bg-emerald-50 text-emerald-600" />
+            <SummaryCard icon={FiRotateCcw} label="Returned Sale Amount" value={money(summary.returned_sales_amount)} hint={`${number(summary.total_returned_sales)} returned sales`} tone="bg-rose-50 text-rose-600" />
         </section>
     );
 }
