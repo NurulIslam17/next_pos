@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\PermissionController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\PurchaseController;
+use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\SaleController;
 use App\Http\Controllers\Api\V1\ShopController;
@@ -33,6 +34,17 @@ Route::prefix('v1')->group(function () {
         // Every route below is guarded by a "{module}.{action}" permission.
         Route::get('dashboard', [DashboardController::class, 'index'])->middleware('permission:dashboard.view');
         Route::get('shop-monitor', [ShopMonitorController::class, 'index'])->middleware('permission:shop_monitor.view');
+
+        Route::controller(ReportController::class)->prefix('reports')->group(function () {
+            Route::get('stocks/export', 'exportStocks')->middleware('permission:reports.view');
+            Route::get('stocks', 'stocks')->middleware('permission:reports.view');
+            Route::get('purchases/export', 'exportPurchases')->middleware('permission:reports.view');
+            Route::get('purchases', 'purchases')->middleware('permission:reports.view');
+            Route::get('sales/export', 'exportSales')->middleware('permission:reports.view');
+            Route::get('sales', 'sales')->middleware('permission:reports.view');
+            Route::get('sales-returns/export', 'exportSalesReturns')->middleware('permission:reports.view');
+            Route::get('sales-returns', 'salesReturns')->middleware('permission:reports.view');
+        });
 
         Route::controller(ProductController::class)->prefix('products')->group(function () {
             Route::get('/', 'index')->middleware('permission:products.view');

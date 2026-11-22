@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Product;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 
 class StoreProductRequest extends FormRequest
@@ -28,6 +29,11 @@ class StoreProductRequest extends FormRequest
             'vat' => ['sometimes', 'numeric', 'min:0', 'max:100'],
             'vat_type' => ['sometimes', 'string', 'in:included,excluded'],
             'note' => ['nullable', 'string'],
+            'created_by_shop_id' => [
+                Rule::when($this->user()?->shop_id === null, ['required'], ['sometimes']),
+                'integer',
+                Rule::exists('shops', 'id'),
+            ],
             'images' => ['sometimes', 'array', 'max:10'],
             'images.*' => ['file', File::image()->max('5mb')],
             'is_active' => ['sometimes', 'boolean'],

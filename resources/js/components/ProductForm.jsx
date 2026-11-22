@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { FiImage, FiSave, FiTrash2, FiX } from "react-icons/fi";
 import { api, ApiError } from "../api";
+import { useAuth } from "../auth";
 import { primaryButton, secondaryButton } from "./ui";
 
 const inputClass =
@@ -27,11 +28,16 @@ export default function ProductForm({
     categories,
     brands,
     suppliers,
+    shops = [],
     onSaved,
     onCancel,
 }) {
+    const { user } = useAuth();
+    const isManager = user?.role === "manager";
     const [form, setForm] = useState({
         name: product?.name ?? "",
+        created_by_shop_id:
+            product?.created_by_shop_id ?? (isManager ? user?.shop_id ?? "" : ""),
         sku: product?.sku ?? "",
         category_id: product?.category_id ?? "",
         brand_id: product?.brand_id ?? "",
@@ -53,12 +59,14 @@ export default function ProductForm({
 
     useEffect(() => {
         if (product) return;
-        api("/products/next-sku")
+        api("/products/next-sku", {
+            params: { shop_id: form.created_by_shop_id || undefined },
+        })
             .then((response) =>
                 setForm((current) => ({ ...current, sku: response.data.sku })),
             )
             .catch(() => {});
-    }, [product]);
+    }, [product, form.created_by_shop_id]);
 
     useEffect(
         () => () => newImages.forEach(({ url }) => URL.revokeObjectURL(url)),
@@ -119,6 +127,10 @@ export default function ProductForm({
             brand_id: form.brand_id === "" ? null : Number(form.brand_id),
             supplier_id:
                 form.supplier_id === "" ? null : Number(form.supplier_id),
+            created_by_shop_id:
+                form.created_by_shop_id === ""
+                    ? null
+                    : Number(form.created_by_shop_id),
             cost_price: form.cost_price === "" ? 0 : form.cost_price,
             price: form.price === "" ? 0 : form.price,
             stock: product?.stock ?? 0,
@@ -204,6 +216,37 @@ export default function ProductForm({
                             readOnly
                         />
                     )}
+                </Field>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <Field label="Shop" error={first("created_by_shop_id")}>
+                    <select
+                        className={`${inputClass} ${isManager || product ? "cursor-not-allowed bg-slate-50" : ""}`}
+                        value={form.created_by_shop_id}
+                        onChange={set("created_by_shop_id")}
+                        required
+                        disabled={isManager || Boolean(product)}
+                    >
+                        <option value="">
+                            {isManager
+                                ? user?.shop_id
+                                    ? "Assigned shop"
+                                    : "No shop assigned"
+                                : "Select shop"}
+                        </option>
+                        {(isManager
+                            ? shops.filter(
+                                  (shop) =>
+                                      String(shop.id) === String(user?.shop_id),
+                              )
+                            : shops
+                        ).map((shop) => (
+                            <option key={shop.id} value={shop.id}>
+                                {shop.name}
+                            </option>
+                        ))}
+                    </select>
                 </Field>
             </div>
 

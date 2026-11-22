@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Product\StoreProductRequest;
 use App\Http\Requests\Product\UpdateProductRequest;
 use App\Http\Resources\ProductResource;
+use App\Models\Shop;
 use App\Services\ProductService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -31,7 +32,9 @@ class ProductController extends Controller
 
     public function nextSku(Request $request): JsonResponse
     {
-        return $this->success(['sku' => $this->products->generateSku($request->user()->shop_id)]);
+        $shopId = $this->resolveShopId($request);
+
+        return $this->success(['sku' => $this->products->generateSku($shopId)]);
     }
 
     public function show(int $product): JsonResponse
@@ -41,10 +44,12 @@ class ProductController extends Controller
 
     public function store(StoreProductRequest $request): JsonResponse
     {
+        $shopId = $this->resolveShopId($request, $request->validated('created_by_shop_id'));
+
         return $this->created(new ProductResource($this->products->create([
             ...$request->validated(),
-            'created_by_shop_id' => $request->user()->shop_id,
-        ], $request->user()->shop?->code ?? 'SHOP')), 'Product created');
+            'created_by_shop_id' => $shopId,
+        ], $this->shopCode($shopId) ?? 'SHOP')), 'Product created');
     }
 
     public function update(UpdateProductRequest $request, int $product): JsonResponse
@@ -57,5 +62,23 @@ class ProductController extends Controller
         $this->products->delete($product);
 
         return $this->noContent();
+    }
+
+    private function resolveShopId(Request $request, ?int $submittedShopId = null): ?int
+    {
+        if ($request->user()->hasRole('manager')) {
+            return $request->user()->shop_id;
+        }
+
+        if ($submittedShopId !== null) {
+            return $submittedShopId ?: null;
+        }
+
+        return $request->integer('shop_id') ?: $request->user()->shop_id;
+    }
+
+    private function shopCode(?int $shopId): ?string
+    {
+        return $shopId ? Shop::whereKey($shopId)->value('code') : null;
     }
 }

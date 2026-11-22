@@ -19,6 +19,7 @@ class PermissionSeeder extends Seeder
         'categories' => ['view', 'create', 'update', 'delete'],
         'brands' => ['view', 'create', 'update', 'delete'],
         'barcodes' => ['view'],
+        'reports' => ['view'],
         'shops' => ['view', 'create', 'update', 'delete'],
         'suppliers' => ['view', 'create', 'update', 'delete'],
         'customers' => ['view', 'create', 'update', 'delete'],
@@ -53,7 +54,7 @@ class PermissionSeeder extends Seeder
             'purchases.view', 'purchases.create',
             'sales.view', 'sales.create', 'sales.return',
             'categories.view', 'categories.create',
-            'brands.view', 'brands.create', 'barcodes.view', 'shops.view', 'suppliers.view',
+            'brands.view', 'brands.create', 'barcodes.view', 'reports.view', 'shops.view', 'suppliers.view',
             'customers.view', 'customers.create', 'payment_types.view',
         ]);
 
