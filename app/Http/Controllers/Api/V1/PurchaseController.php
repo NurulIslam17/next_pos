@@ -25,6 +25,7 @@ class PurchaseController extends Controller
             'search' => ['nullable', 'string', 'max:255'],
             'date_from' => ['nullable', 'date_format:Y-m-d'],
             'date_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:date_from'],
+            'status' => ['nullable', 'string', 'in:pending,approved'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
@@ -34,6 +35,7 @@ class PurchaseController extends Controller
             isset($filters['search']) ? trim($filters['search']) : null,
             $filters['date_from'] ?? null,
             $filters['date_to'] ?? null,
+            $filters['status'] ?? null,
         );
 
         return $this->paginated(PurchaseResource::collection($purchases));

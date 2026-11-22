@@ -13,7 +13,7 @@ class PurchaseRepository extends BaseRepository implements PurchaseRepositoryInt
         parent::__construct($model);
     }
 
-    public function paginatePurchases(int $perPage, ?string $search = null, ?string $dateFrom = null, ?string $dateTo = null): LengthAwarePaginator
+    public function paginatePurchases(int $perPage, ?string $search = null, ?string $dateFrom = null, ?string $dateTo = null, ?string $status = null): LengthAwarePaginator
     {
         return $this->model
             ->with(['supplier', 'shop', 'paymentType', 'creator', 'approver', 'items.product'])
@@ -23,6 +23,7 @@ class PurchaseRepository extends BaseRepository implements PurchaseRepositoryInt
                 ->orWhereHas('supplier', fn ($query) => $query->whereLike('name', "%{$search}%"))))
             ->when($dateFrom, fn ($query) => $query->whereDate('purchases.purchase_date', '>=', $dateFrom))
             ->when($dateTo, fn ($query) => $query->whereDate('purchases.purchase_date', '<=', $dateTo))
+            ->when($status, fn ($query) => $query->where('purchases.status', $status))
             ->latest()
             ->paginate($perPage);
     }

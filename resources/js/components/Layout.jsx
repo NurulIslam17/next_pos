@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { BsUpcScan } from 'react-icons/bs';
-import { FiActivity, FiChevronDown, FiChevronRight, FiCreditCard, FiGrid, FiKey, FiLogOut, FiPackage, FiSettings, FiShield, FiShoppingBag, FiShoppingCart, FiTag, FiTruck, FiUser, FiUsers, FiAward } from 'react-icons/fi';
+import { FiActivity, FiChevronDown, FiChevronRight, FiCreditCard, FiGrid, FiKey, FiLogOut, FiPackage, FiSettings, FiShield, FiShoppingBag, FiShoppingCart, FiTag, FiTruck, FiUser, FiUsers, FiAward, FiTrendingUp } from 'react-icons/fi';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth';
 import ChangePasswordForm from './ChangePasswordForm';
@@ -18,6 +18,7 @@ const navigation = [
     { to: '/shop-monitor', label: 'Shop Monitor', icon: FiActivity, permission: 'shop_monitor.view' },
     { to: '/products', label: 'Products', icon: FiPackage, permission: 'products.view' },
     { to: '/purchases', label: 'Purchasing', icon: FiShoppingCart, permission: 'purchases.view' },
+    { to: '/sales', label: 'Sales', icon: FiTrendingUp, permission: 'sales.view' },
     { to: '/categories', label: 'Categories', icon: FiTag, permission: 'categories.view' },
     { to: '/brands', label: 'Brands', icon: FiAward, permission: 'brands.view' },
     { to: '/barcodes', label: 'Barcode', icon: BsUpcScan, permission: 'barcodes.view' },

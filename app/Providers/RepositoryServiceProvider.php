@@ -10,6 +10,7 @@ use App\Repositories\Contracts\PermissionRepositoryInterface;
 use App\Repositories\Contracts\ProductRepositoryInterface;
 use App\Repositories\Contracts\PurchaseRepositoryInterface;
 use App\Repositories\Contracts\RoleRepositoryInterface;
+use App\Repositories\Contracts\SaleRepositoryInterface;
 use App\Repositories\Contracts\ShopRepositoryInterface;
 use App\Repositories\Contracts\SupplierRepositoryInterface;
 use App\Repositories\Contracts\UserRepositoryInterface;
@@ -21,6 +22,7 @@ use App\Repositories\Eloquent\PermissionRepository;
 use App\Repositories\Eloquent\ProductRepository;
 use App\Repositories\Eloquent\PurchaseRepository;
 use App\Repositories\Eloquent\RoleRepository;
+use App\Repositories\Eloquent\SaleRepository;
 use App\Repositories\Eloquent\ShopRepository;
 use App\Repositories\Eloquent\SupplierRepository;
 use App\Repositories\Eloquent\UserRepository;
@@ -41,5 +43,6 @@ class RepositoryServiceProvider extends ServiceProvider
         SupplierRepositoryInterface::class => SupplierRepository::class,
         PaymentTypeRepositoryInterface::class => PaymentTypeRepository::class,
         PurchaseRepositoryInterface::class => PurchaseRepository::class,
+        SaleRepositoryInterface::class => SaleRepository::class,
     ];
 }
