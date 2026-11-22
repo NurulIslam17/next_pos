@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Shop;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
@@ -19,6 +20,7 @@ class ProductVatTypeTest extends TestCase
         $response = $this->actingAs($user)->postJson('/api/v1/products', [
             'name' => 'Notebook',
             'price' => 10,
+            'created_by_shop_id' => $user->shop_id,
             'vat' => 5,
         ]);
 
@@ -33,6 +35,7 @@ class ProductVatTypeTest extends TestCase
         $response = $this->actingAs($user)->postJson('/api/v1/products', [
             'name' => 'Pen',
             'price' => 10,
+            'created_by_shop_id' => $user->shop_id,
             'vat' => 5,
             'vat_type' => 'excluded',
         ]);
@@ -48,13 +51,15 @@ class ProductVatTypeTest extends TestCase
         $this->actingAs($user)->postJson('/api/v1/products', [
             'name' => 'Eraser',
             'price' => 10,
+            'created_by_shop_id' => $user->shop_id,
             'vat_type' => 'maybe',
         ])->assertUnprocessable()->assertJsonValidationErrors('vat_type');
     }
 
     private function userWithCreatePermission(): User
     {
-        $user = User::factory()->create();
+        $shop = Shop::create(['name' => 'VAT Shop', 'code' => 'VAT']);
+        $user = User::factory()->create(['shop_id' => $shop->id]);
         Permission::findOrCreate('products.create', 'web');
         app(PermissionRegistrar::class)->forgetCachedPermissions();
         $user->givePermissionTo('products.create');

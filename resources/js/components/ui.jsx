@@ -103,6 +103,7 @@ export function RowActions({ onEdit, onDelete }) {
 export function useList(path, params) {
     const [items, setItems] = useState([]);
     const [meta, setMeta] = useState(null);
+    const [summary, setSummary] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const key = JSON.stringify(params ?? {});
@@ -114,6 +115,7 @@ export function useList(path, params) {
             const response = await api(path, { params: JSON.parse(key) });
             setItems(response.data);
             setMeta(response.meta ?? null);
+            setSummary(response.summary ?? null);
         } catch (e) {
             setError(e.message);
         } finally {
@@ -125,7 +127,7 @@ export function useList(path, params) {
         reload();
     }, [reload]);
 
-    return { items, meta, isLoading, error, reload, setError };
+    return { items, meta, summary, isLoading, error, reload, setError };
 }
 
 /** Wraps a save/delete call, returning field errors from validation failures. */

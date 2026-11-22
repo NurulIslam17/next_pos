@@ -90,6 +90,7 @@ export default function Products() {
     const [categories, setCategories] = useState([]);
     const [brands, setBrands] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
+    const [shops, setShops] = useState([]);
     const [search, setSearch] = useState('');
     const [query, setQuery] = useState('');
     const [page, setPage] = useState(1);
@@ -122,6 +123,7 @@ export default function Products() {
         api('/categories/all').then((response) => setCategories(response.data)).catch(() => {});
         api('/brands').then((response) => setBrands(response.data)).catch(() => {});
         api('/suppliers').then((response) => setSuppliers(response.data)).catch(() => {});
+        api('/shops').then((response) => setShops(response.data)).catch(() => {});
     }, []);
 
     // Debounce the search box so we don't hit the API on every keystroke.
@@ -278,7 +280,7 @@ export default function Products() {
 
             {editing && (
                 <Modal title={editing.id ? 'Edit product' : 'Add product'} onClose={() => setEditing(null)} size="lg">
-                    <ProductForm product={editing.id ? editing : null} categories={categories} brands={brands} suppliers={suppliers} onSaved={handleSaved} onCancel={() => setEditing(null)} />
+                    <ProductForm product={editing.id ? editing : null} categories={categories} brands={brands} suppliers={suppliers} shops={shops} onSaved={handleSaved} onCancel={() => setEditing(null)} />
                 </Modal>
             )}
             {details && (

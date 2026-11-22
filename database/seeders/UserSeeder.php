@@ -38,7 +38,7 @@ class UserSeeder extends Seeder
         // One manager per shop.
         foreach (Shop::orderBy('id')->get() as $i => $shop) {
             User::updateOrCreate(
-                ['email' => 'manager' . ($i + 1) . '@pos.test'],
+                ['email' => 'manager'.($i + 1).'@pos.test'],
                 $this->profile("পরিচালক - {$cities[$i]['name']}", $i + 1, $shop->id, 35000),
             )->syncRoles('manager');
         }

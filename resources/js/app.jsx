@@ -18,7 +18,11 @@ import Users from './pages/config/Users';
 import Login from './pages/Login';
 import Products from './pages/Products';
 import Purchases from './pages/Purchases';
+import PurchasesReport from './pages/reports/PurchasesReport';
 import Sales from './pages/Sales';
+import SalesReport from './pages/reports/SalesReport';
+import SalesReturnReport from './pages/reports/SalesReturnReport';
+import StocksReport from './pages/reports/StocksReport';
 
 // Each page with the permission needed to open it; the first match becomes the landing page.
 const pages = [
@@ -30,6 +34,10 @@ const pages = [
     { path: '/categories', permission: 'categories.view', element: <Categories /> },
     { path: '/brands', permission: 'brands.view', element: <Brands /> },
     { path: '/barcodes', permission: 'barcodes.view', element: <Barcodes /> },
+    { path: '/reports/stocks', permission: 'reports.view', element: <StocksReport /> },
+    { path: '/reports/purchases', permission: 'reports.view', element: <PurchasesReport /> },
+    { path: '/reports/sales', permission: 'reports.view', element: <SalesReport /> },
+    { path: '/reports/returns', permission: 'reports.view', element: <SalesReturnReport /> },
     { path: '/configuration/users', permission: 'users.view', element: <Users /> },
     { path: '/configuration/shops', permission: 'shops.view', element: <Shops /> },
     { path: '/configuration/suppliers', permission: 'suppliers.view', element: <Suppliers /> },
@@ -91,13 +99,18 @@ function App() {
                     <Route key={page.path} path={page.path} element={<RequirePermission permission={page.permission}>{page.element}</RequirePermission>} />
                 ))}
                 <Route path="/configuration" element={<Navigate to="/configuration/users" replace />} />
+                <Route path="/reports" element={<Navigate to="/reports/stocks" replace />} />
                 <Route path="*" element={<Landing />} />
             </Route>
         </Routes>
     );
 }
 
-createRoot(document.getElementById('root')).render(
+const rootElement = document.getElementById('root');
+const root = rootElement._posReactRoot ?? createRoot(rootElement);
+rootElement._posReactRoot = root;
+
+root.render(
     <StrictMode>
         <BrowserRouter>
             <AuthProvider>

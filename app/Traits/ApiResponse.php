@@ -21,9 +21,9 @@ trait ApiResponse
         return $this->success($data, $message, 201);
     }
 
-    protected function paginated(AnonymousResourceCollection $collection, string $message = 'Success'): JsonResponse
+    protected function paginated(AnonymousResourceCollection $collection, string $message = 'Success', array $additional = []): JsonResponse
     {
-        return $collection->additional(['success' => true, 'message' => $message])->response();
+        return $collection->additional(array_merge(['success' => true, 'message' => $message], $additional))->response();
     }
 
     protected function error(string $message = 'Error', int $code = 400, mixed $errors = null): JsonResponse
