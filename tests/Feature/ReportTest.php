@@ -31,6 +31,7 @@ class ReportTest extends TestCase
             'purchases' => ['/api/v1/reports/purchases'],
             'sales' => ['/api/v1/reports/sales'],
             'sales returns' => ['/api/v1/reports/sales-returns'],
+            'registrar' => ['/api/v1/reports/registrar'],
         ];
     }
 
@@ -41,6 +42,7 @@ class ReportTest extends TestCase
             'purchases' => ['/api/v1/reports/purchases/export'],
             'sales' => ['/api/v1/reports/sales/export'],
             'sales returns' => ['/api/v1/reports/sales-returns/export'],
+            'registrar' => ['/api/v1/reports/registrar/export'],
         ];
     }
 
@@ -444,6 +446,58 @@ class ReportTest extends TestCase
         $this->assertStringContainsString('CSV Shop', $content);
     }
 
+    public function test_registrar_report_lists_purchases_sales_and_returns(): void
+    {
+        $user = $this->userWithPermission();
+        $shop = $this->shop('REG', 'Registrar Shop');
+        $this->createPurchase($shop, 'REG-PUR');
+        $this->createSale($shop, 'REG-SAL');
+        $this->createSale($shop, 'REG-RET', 'returned');
+
+        $response = $this->actingAs($user)
+            ->getJson('/api/v1/reports/registrar?date_from=2026-11-01&date_to=2026-11-30');
+
+        $response->assertOk()
+            ->assertJsonCount(3, 'data')
+            ->assertJsonPath('summary.total_transactions', 3)
+            ->assertJsonPath('summary.purchase_count', 1)
+            ->assertJsonPath('summary.sale_count', 1)
+            ->assertJsonPath('summary.return_count', 1)
+            ->assertJsonPath('summary.net_amount', -50);
+
+        $this->assertSame(
+            ['Sale Return', 'Sale', 'Purchase'],
+            collect($response->json('data'))->pluck('type')->all(),
+        );
+        $this->assertSame('REG-RET', $response->json('data.0.reference_no'));
+    }
+
+    public function test_exports_registrar_report_csv(): void
+    {
+        $user = $this->userWithPermission();
+        $shop = $this->shop('REG', 'Registrar Shop');
+        $purchase = $this->createPurchase($shop, 'REG-PUR');
+        PurchaseItem::factory()->create(['purchase_id' => $purchase->id]);
+        $this->createSale($shop, 'REG-SAL');
+        $this->createSale($shop, 'REG-RET', 'returned');
+
+        $response = $this->actingAs($user)
+            ->get('/api/v1/reports/registrar/export?date_from=2026-11-01&date_to=2026-11-30');
+
+        $response->assertOk()
+            ->assertStreamed()
+            ->assertHeader('Content-Type', 'text/csv; charset=utf-8')
+            ->assertHeader('Content-Disposition', 'attachment; filename=registrar-report-exported-'.now()->toDateString().'-from-2026-11-01-to-2026-11-30.csv');
+
+        $content = $response->streamedContent();
+        $this->assertStringStartsWith("\xEF\xBB\xBF", $content);
+        $this->assertStringContainsString('Date,Type,"Reference No",Party,Shop,Items', $content);
+        $this->assertStringContainsString('REG-PUR', $content);
+        $this->assertStringContainsString('REG-SAL', $content);
+        $this->assertStringContainsString('REG-RET', $content);
+        $this->assertStringContainsString('Total,,,,,1,200.00,0.00,0.00,250.00,250.00,0.00,,-50.00', $content);
+    }
+
     private function shop(string $code, string $name): Shop
     {
         return Shop::create(['name' => $name, 'code' => $code]);
@@ -479,8 +533,10 @@ class ReportTest extends TestCase
             'customer_id' => $customer->id,
             'shop_id' => $shop->id,
             'subtotal' => 100,
+            'discount' => 0,
             'vat' => 0,
             'total' => 100,
+            'paid_amount' => 100,
             'due_amount' => 0,
             'status' => $status,
             'refund_amount' => $isReturned ? 50 : 0,

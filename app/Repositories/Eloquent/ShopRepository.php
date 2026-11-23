@@ -17,4 +17,9 @@ class ShopRepository extends BaseRepository implements ShopRepositoryInterface
     {
         return $this->model->with(['manager', ...$relations])->withCount('users')->orderBy('id')->get($columns);
     }
+
+    public function names(): Collection
+    {
+        return $this->model->query()->orderBy('name')->get(['id', 'name', 'code']);
+    }
 }

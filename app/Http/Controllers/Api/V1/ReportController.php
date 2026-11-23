@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PurchaseReportResource;
+use App\Http\Resources\RegistrarReportResource;
 use App\Http\Resources\SalesReportResource;
 use App\Http\Resources\SalesReturnReportResource;
 use App\Http\Resources\StockReportResource;
@@ -77,6 +78,17 @@ class ReportController extends Controller
         );
     }
 
+    public function registrar(Request $request): JsonResponse
+    {
+        $report = $this->reports->registrar($this->validateFilters($request));
+
+        return $this->paginated(
+            RegistrarReportResource::collection($report['paginator']),
+            'Success',
+            ['summary' => $report['summary']],
+        );
+    }
+
     public function exportStocks(Request $request): StreamedResponse
     {
         return $this->streamCsv('stocks', $this->validateFilters($request, [
@@ -101,6 +113,11 @@ class ReportController extends Controller
     public function exportSalesReturns(Request $request): StreamedResponse
     {
         return $this->streamCsv('sales-returns', $this->validateFilters($request));
+    }
+
+    public function exportRegistrar(Request $request): StreamedResponse
+    {
+        return $this->streamCsv('registrar', $this->validateFilters($request));
     }
 
     private function streamCsv(string $report, array $filters): StreamedResponse

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FiEye, FiEyeOff, FiLogIn } from 'react-icons/fi';
-import { Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../auth';
 
 const features = [
@@ -66,7 +66,7 @@ export default function Login() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     if (user) {
-        return <Navigate to="/" replace />;
+        return <Navigate to="/dashboard" replace />;
     }
 
     const handleSubmit = async (event) => {
@@ -128,6 +128,10 @@ export default function Login() {
                         </span>
                         <span className="text-lg font-semibold">My POS</span>
                     </div>
+
+                    <Link to="/" className="mb-5 inline-block text-sm font-medium text-indigo-600 transition hover:text-indigo-500">
+                        ← Back to home
+                    </Link>
 
                     <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
                     <p className="mt-1 text-sm text-slate-500">Sign in to open your register.</p>

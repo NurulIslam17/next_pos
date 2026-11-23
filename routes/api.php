@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\BrandController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\LandingPageController;
 use App\Http\Controllers\Api\V1\PaymentTypeController;
 use App\Http\Controllers\Api\V1\PermissionController;
 use App\Http\Controllers\Api\V1\ProductController;
@@ -25,11 +26,17 @@ Route::prefix('v1')->group(function () {
         Route::post('login', [AuthController::class, 'login']);
     });
 
+    Route::get('landing-page', [LandingPageController::class, 'show']);
+    Route::get('landing-page/shops', [LandingPageController::class, 'shops']);
+
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('auth/me', [AuthController::class, 'me']);
         Route::post('auth/logout', [AuthController::class, 'logout']);
         Route::match(['put', 'patch'], 'profile', [ProfileController::class, 'update']);
         Route::post('profile/change-password', [ProfileController::class, 'changePassword']);
+
+        Route::get('landing-page/settings', [LandingPageController::class, 'settings'])->middleware('permission:landing_page.view');
+        Route::match(['put', 'patch'], 'landing-page', [LandingPageController::class, 'update'])->middleware('permission:landing_page.update');
 
         // Every route below is guarded by a "{module}.{action}" permission.
         Route::get('dashboard', [DashboardController::class, 'index'])->middleware('permission:dashboard.view');
@@ -44,6 +51,8 @@ Route::prefix('v1')->group(function () {
             Route::get('sales', 'sales')->middleware('permission:reports.view');
             Route::get('sales-returns/export', 'exportSalesReturns')->middleware('permission:reports.view');
             Route::get('sales-returns', 'salesReturns')->middleware('permission:reports.view');
+            Route::get('registrar/export', 'exportRegistrar')->middleware('permission:reports.view');
+            Route::get('registrar', 'registrar')->middleware('permission:reports.view');
         });
 
         Route::controller(ProductController::class)->prefix('products')->group(function () {

@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\Sale;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -99,6 +100,30 @@ class ReportService
         return ['paginator' => $paginator, 'summary' => $summary];
     }
 
+    public function registrar(array $filters): array
+    {
+        $rows = $this->registrarRows($filters);
+        $perPage = $this->perPage($filters);
+        $page = max((int) ($filters['page'] ?? 1), 1);
+
+        $summary = [
+            'total_transactions' => $rows->count(),
+            'purchase_count' => $rows->where('type', 'Purchase')->count(),
+            'sale_count' => $rows->where('type', 'Sale')->count(),
+            'return_count' => $rows->where('type', 'Sale Return')->count(),
+            'net_amount' => (float) $rows->sum('net_amount'),
+        ];
+
+        $paginator = new LengthAwarePaginator(
+            $rows->forPage($page, $perPage)->values()->all(),
+            $rows->count(),
+            $perPage,
+            $page,
+        );
+
+        return ['paginator' => $paginator, 'summary' => $summary];
+    }
+
     public function rows(string $report, array $filters): Collection
     {
         return match ($report) {
@@ -122,6 +147,7 @@ class ReportService
                 ->orderByDesc('sales.returned_at')
                 ->orderByDesc('sales.id')
                 ->get(),
+            'registrar' => $this->registrarRows($filters),
             default => throw new InvalidArgumentException("Unknown report: {$report}"),
         };
     }
@@ -227,6 +253,103 @@ class ReportService
         $this->applyDateRange($query, 'sales.returned_at', $filters);
 
         return $query;
+    }
+
+    private function registrarRows(array $filters): Collection
+    {
+        $purchases = $this->purchasesQuery($filters)
+            ->withCount('items')
+            ->get()
+            ->map(fn (Purchase $purchase): array => $this->registrarPurchaseRow($purchase));
+
+        $sales = $this->salesQuery($filters)
+            ->where('sales.status', '!=', 'returned')
+            ->withCount('items')
+            ->get()
+            ->map(fn (Sale $sale): array => $this->registrarSaleRow($sale));
+
+        $returns = $this->salesReturnsQuery($filters)
+            ->withCount('items')
+            ->get()
+            ->map(fn (Sale $sale): array => $this->registrarReturnRow($sale));
+
+        return $purchases
+            ->concat($sales)
+            ->concat($returns)
+            ->sortByDesc(fn (array $row): int => $row['sort_at']?->timestamp ?? 0)
+            ->values();
+    }
+
+    private function registrarPurchaseRow(Purchase $purchase): array
+    {
+        $total = (float) $purchase->total;
+
+        return [
+            'id' => 'purchase-'.$purchase->id,
+            'date' => $purchase->purchase_date?->toDateString() ?? '',
+            'type' => 'Purchase',
+            'reference_no' => $purchase->purchase_no,
+            'party_name' => $purchase->supplier?->name ?? '',
+            'shop_name' => $purchase->shop?->name ?? '',
+            'item_count' => (int) ($purchase->items_count ?? 0),
+            'subtotal' => (float) $purchase->subtotal,
+            'discount' => (float) $purchase->discount,
+            'vat' => (float) $purchase->vat,
+            'total' => $total,
+            'paid_amount' => (float) $purchase->paid_amount,
+            'due_amount' => (float) $purchase->due_amount,
+            'status' => ucfirst((string) $purchase->status),
+            'net_amount' => -$total,
+            'sort_at' => $purchase->purchase_date,
+        ];
+    }
+
+    private function registrarSaleRow(Sale $sale): array
+    {
+        $total = (float) $sale->total;
+
+        return [
+            'id' => 'sale-'.$sale->id,
+            'date' => $sale->sale_date?->toDateString() ?? '',
+            'type' => 'Sale',
+            'reference_no' => $sale->sale_no,
+            'party_name' => $sale->customer?->name ?? '',
+            'shop_name' => $sale->shop?->name ?? '',
+            'item_count' => (int) ($sale->items_count ?? 0),
+            'subtotal' => (float) $sale->subtotal,
+            'discount' => (float) $sale->discount,
+            'vat' => (float) $sale->vat,
+            'total' => $total,
+            'paid_amount' => (float) $sale->paid_amount,
+            'due_amount' => (float) $sale->due_amount,
+            'status' => ucfirst((string) $sale->status),
+            'net_amount' => $total,
+            'sort_at' => $sale->sale_date,
+        ];
+    }
+
+    private function registrarReturnRow(Sale $sale): array
+    {
+        $refund = abs((float) $sale->refund_amount);
+
+        return [
+            'id' => 'return-'.$sale->id,
+            'date' => ($sale->returned_at ?? $sale->sale_date)?->toDateString() ?? '',
+            'type' => 'Sale Return',
+            'reference_no' => $sale->sale_no,
+            'party_name' => $sale->customer?->name ?? '',
+            'shop_name' => $sale->shop?->name ?? '',
+            'item_count' => (int) ($sale->items_count ?? 0),
+            'subtotal' => 0.0,
+            'discount' => 0.0,
+            'vat' => 0.0,
+            'total' => $refund,
+            'paid_amount' => $refund,
+            'due_amount' => 0.0,
+            'status' => 'Refunded',
+            'net_amount' => -$refund,
+            'sort_at' => $sale->returned_at ?? $sale->sale_date,
+        ];
     }
 
     private function applyShopFilter(Builder $query, string $column, array $filters): void

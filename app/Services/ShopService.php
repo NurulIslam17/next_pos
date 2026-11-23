@@ -15,6 +15,11 @@ class ShopService
         return $this->shops->all();
     }
 
+    public function names(): Collection
+    {
+        return $this->shops->names();
+    }
+
     public function create(array $data): Shop
     {
         return $this->shops->create($data);

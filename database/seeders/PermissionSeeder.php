@@ -20,6 +20,7 @@ class PermissionSeeder extends Seeder
         'brands' => ['view', 'create', 'update', 'delete'],
         'barcodes' => ['view'],
         'reports' => ['view'],
+        'landing_page' => ['view', 'update'],
         'shops' => ['view', 'create', 'update', 'delete'],
         'suppliers' => ['view', 'create', 'update', 'delete'],
         'customers' => ['view', 'create', 'update', 'delete'],

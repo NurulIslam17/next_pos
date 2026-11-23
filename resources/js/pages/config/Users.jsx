@@ -393,14 +393,14 @@ export default function Users() {
                         <td className="px-4 py-3 text-center">
                             <UserPhoto user={user} className="mx-auto h-10 w-10 rounded-full object-cover ring-1 ring-slate-200" />
                         </td>
-                        <td className="px-4 py-3 text-center font-medium">{user.name}</td>
+                        <td className="px-4 py-3 text-center font-medium whitespace-nowrap">{user.name}</td>
                         <td className="px-4 py-3 text-center text-slate-600">
                             {user.email}
                         </td>
                         <td className="px-4 py-3 text-center text-slate-600">
                             {user.phone ?? "—"}
                         </td>
-                        <td className="space-x-1 px-4 py-3 text-center">
+                        <td className="space-x-1 px-4 py-3 text-center whitespace-nowrap">
                             {user.roles.length ? (
                                 user.roles.map((role) => (
                                     <Badge key={role} tone="indigo">
@@ -411,7 +411,7 @@ export default function Users() {
                                 <span className="text-slate-400">—</span>
                             )}
                         </td>
-                        <td className="px-4 py-3 text-center text-slate-600">
+                        <td className="px-4 py-3 text-center text-slate-600 whitespace-nowrap">
                             {user.shop ?? "—"}
                         </td>
                         <td className="whitespace-nowrap px-4 py-3 text-center text-slate-600">

@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Repositories\Contracts\BrandRepositoryInterface;
 use App\Repositories\Contracts\CategoryRepositoryInterface;
 use App\Repositories\Contracts\CustomerRepositoryInterface;
+use App\Repositories\Contracts\LandingPageRepositoryInterface;
 use App\Repositories\Contracts\PaymentTypeRepositoryInterface;
 use App\Repositories\Contracts\PermissionRepositoryInterface;
 use App\Repositories\Contracts\ProductRepositoryInterface;
@@ -17,6 +18,7 @@ use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Repositories\Eloquent\BrandRepository;
 use App\Repositories\Eloquent\CategoryRepository;
 use App\Repositories\Eloquent\CustomerRepository;
+use App\Repositories\Eloquent\LandingPageRepository;
 use App\Repositories\Eloquent\PaymentTypeRepository;
 use App\Repositories\Eloquent\PermissionRepository;
 use App\Repositories\Eloquent\ProductRepository;
@@ -36,6 +38,7 @@ class RepositoryServiceProvider extends ServiceProvider
         BrandRepositoryInterface::class => BrandRepository::class,
         CategoryRepositoryInterface::class => CategoryRepository::class,
         CustomerRepositoryInterface::class => CustomerRepository::class,
+        LandingPageRepositoryInterface::class => LandingPageRepository::class,
         ShopRepositoryInterface::class => ShopRepository::class,
         RoleRepositoryInterface::class => RoleRepository::class,
         PermissionRepositoryInterface::class => PermissionRepository::class,

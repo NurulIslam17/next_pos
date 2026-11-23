@@ -120,7 +120,7 @@ export default function ReportPage({ title, subtitle, endpoint, exportEndpoint, 
             const link = document.createElement('a');
             const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'report';
             link.href = url;
-            link.download = `${slug}.csv`;
+            link.download = blob.filename ?? `${slug}.csv`;
             document.body.appendChild(link);
             link.click();
             link.remove();

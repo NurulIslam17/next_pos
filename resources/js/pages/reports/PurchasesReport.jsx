@@ -44,8 +44,8 @@ const renderRow = (purchase, index, currentPage, perPage) => (
         <td className="whitespace-nowrap px-4 py-3 font-medium">{(currentPage - 1) * perPage + index + 1}</td>
         <td className="whitespace-nowrap px-4 py-3 font-medium">{purchase.purchase_no}</td>
         <td className="whitespace-nowrap px-4 py-3">{purchase.purchase_date}</td>
-        <td className="px-4 py-3">{purchase.supplier_name ?? '-'}</td>
-        <td className="px-4 py-3">{purchase.shop_name ?? '-'}</td>
+        <td className="px-4 py-3 whitespace-nowrap">{purchase.supplier_name ?? '-'}</td>
+        <td className="px-4 py-3 whitespace-nowrap">{purchase.shop_name ?? '-'}</td>
         <td className="px-4 py-3">{purchase.item_count}</td>
         <td className="whitespace-nowrap px-4 py-3">{money(purchase.subtotal)}</td>
         <td className="whitespace-nowrap px-4 py-3">{money(purchase.vat)}</td>

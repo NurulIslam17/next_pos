@@ -2,4 +2,9 @@
 
 namespace App\Repositories\Contracts;
 
-interface ShopRepositoryInterface extends BaseRepositoryInterface {}
+use Illuminate\Database\Eloquent\Collection;
+
+interface ShopRepositoryInterface extends BaseRepositoryInterface
+{
+    public function names(): Collection;
+}
