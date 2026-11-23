@@ -21,11 +21,8 @@ function calculate(item) {
         (Number(item.quantity) || 0) * (Number(item.unit_cost) || 0),
     );
     const discount = round2(Math.min(Number(item.discount) || 0, base));
-    const vat = round2(
-        (base - discount) * ((Number(item.vat_rate) || 0) / 100),
-    );
 
-    return { base, discount, vat, total: round2(base - discount + vat) };
+    return { base, discount, total: round2(base - discount) };
 }
 
 function RequiredLabel({ children }) {
@@ -80,13 +77,6 @@ function validatePurchase(form, items) {
             errors[`${prefix}.unit_cost`] = [
                 "Unit cost must be zero or greater.",
             ];
-        }
-        if (
-            !isNumber(item.vat_rate) ||
-            Number(item.vat_rate) < 0 ||
-            Number(item.vat_rate) > 100
-        ) {
-            errors[`${prefix}.vat_rate`] = ["VAT must be between 0 and 100."];
         }
         if (!isNumber(item.discount) || Number(item.discount) < 0) {
             errors[`${prefix}.discount`] = [
@@ -184,12 +174,10 @@ export default function PurchaseForm({ onSaved, onCancel }) {
         const discount = round2(
             rows.reduce((sum, row) => sum + row.discount, 0),
         );
-        const vat = round2(rows.reduce((sum, row) => sum + row.vat, 0));
-        const total = round2(subtotal - discount + vat);
+        const total = round2(subtotal - discount);
         return {
             subtotal,
             discount,
-            vat,
             total,
             paid: total,
             due: 0,
@@ -245,9 +233,10 @@ export default function PurchaseForm({ onSaved, onCancel }) {
                 product_name: product.name,
                 product_sku: product.sku,
                 stock: product.stock ?? 0,
+                cost_price: product.cost_price ?? 0,
+                selling_price: product.price ?? 0,
                 quantity: 1,
-                unit_cost: product.price ?? 0,
-                vat_rate: product.vat ?? 0,
+                unit_cost: product.cost_price ?? 0,
                 discount: 0,
             },
         ]);
@@ -276,13 +265,20 @@ export default function PurchaseForm({ onSaved, onCancel }) {
                     shop_id: form.shop_id || null,
                     payment_type_id: form.payment_type_id || null,
                     paid_amount: totals.total,
-                    items: items.map(({ key: _key, ...item }) => ({
-                        ...item,
-                        quantity: Number(item.quantity),
-                        unit_cost: Number(item.unit_cost),
-                        vat_rate: Number(item.vat_rate),
-                        discount: Number(item.discount),
-                    })),
+                    items: items.map(
+                        ({
+                            key: _key,
+                            stock: _stock,
+                            cost_price: _costPrice,
+                            selling_price: _sellingPrice,
+                            ...item
+                        }) => ({
+                            ...item,
+                            quantity: Number(item.quantity),
+                            unit_cost: Number(item.unit_cost),
+                            discount: Number(item.discount),
+                        }),
+                    ),
                 },
             });
             onSaved();
@@ -507,8 +503,12 @@ export default function PurchaseForm({ onSaved, onCancel }) {
                                                     </span>
                                                 </div>
                                                 <div className="mt-1 text-xs text-slate-500">
-                                                    Stock: {product.stock} ·
-                                                    Unit cost:{" "}
+                                                    Stock: {product.stock} · Cost
+                                                    Price:{" "}
+                                                    {Number(
+                                                        product.cost_price ?? 0,
+                                                    ).toFixed(2)}{" "}
+                                                    · Selling Price:{" "}
                                                     {Number(
                                                         product.price ?? 0,
                                                     ).toFixed(2)}
@@ -560,7 +560,6 @@ export default function PurchaseForm({ onSaved, onCancel }) {
                                 const hasItemError = [
                                     "quantity",
                                     "unit_cost",
-                                    "vat_rate",
                                     "discount",
                                 ].some((field) => itemError(field));
                                 return (
@@ -583,7 +582,14 @@ export default function PurchaseForm({ onSaved, onCancel }) {
                                             </div>
                                             <div className="text-xs text-slate-500">
                                                 {item.product_sku} · Stock:{" "}
-                                                {item.stock}
+                                                {item.stock} · Cost Price:{" "}
+                                                {Number(
+                                                    item.cost_price ?? 0,
+                                                ).toFixed(2)}{" "}
+                                                · Selling Price:{" "}
+                                                {Number(
+                                                    item.selling_price ?? 0,
+                                                ).toFixed(2)}
                                             </div>
                                         </div>
                                         <label className="w-20 shrink-0 text-xs font-medium text-slate-500">
@@ -644,35 +650,6 @@ export default function PurchaseForm({ onSaved, onCancel }) {
                                                 </span>
                                             )}
                                         </label>
-                                        <label className="w-20 shrink-0 text-xs font-medium text-slate-500">
-                                            <RequiredLabel>VAT %</RequiredLabel>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="100"
-                                                step="0.01"
-                                                required
-                                                value={item.vat_rate}
-                                                disabled={isLocked}
-                                                aria-invalid={Boolean(
-                                                    itemError("vat_rate"),
-                                                )}
-                                                onChange={(event) =>
-                                                    updateItem(item.key, {
-                                                        vat_rate:
-                                                            event.target.value,
-                                                    })
-                                                }
-                                                className={itemInputClass(
-                                                    "vat_rate",
-                                                )}
-                                            />
-                                            {itemError("vat_rate") && (
-                                                <span className="mt-1 block text-xs font-normal text-red-600">
-                                                    {itemError("vat_rate")}
-                                                </span>
-                                            )}
-                                        </label>
                                         <label className="w-28 shrink-0 text-xs font-medium text-slate-500">
                                             <RequiredLabel>
                                                 Discount
@@ -703,9 +680,9 @@ export default function PurchaseForm({ onSaved, onCancel }) {
                                                 </span>
                                             )}
                                         </label>
-                                        <div className="w-24 shrink-0 text-right">
+                                        <div className="w-28 shrink-0 text-right">
                                             <div className="text-xs text-slate-500">
-                                                Line Total
+                                                Amount
                                             </div>
                                             <div className="font-semibold">
                                                 {row.total.toFixed(2)}
@@ -744,10 +721,6 @@ export default function PurchaseForm({ onSaved, onCancel }) {
                     <div className="w-64 flex justify-between">
                         <span className="text-slate-500">Discount</span>
                         <span>-{totals.discount.toFixed(2)}</span>
-                    </div>
-                    <div className="w-64 flex justify-between">
-                        <span className="text-slate-500">VAT</span>
-                        <span>{totals.vat.toFixed(2)}</span>
                     </div>
                     <div className="w-64 flex justify-between text-base font-semibold">
                         <span>Grand Total</span>

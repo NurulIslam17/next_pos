@@ -36,16 +36,16 @@ export function AuthProvider({ children }) {
         }
     }, []);
 
+    const isSuperAdmin =
+        user?.role === 'super_admin' || user?.roles?.includes('super_admin') || false;
+
     const can = useCallback(
-        (permission) =>
-            user?.role === 'super_admin' ||
-            user?.roles?.includes('super_admin') ||
-            Boolean(user?.permissions?.includes(permission)),
-        [user]
+        (permission) => isSuperAdmin || Boolean(user?.permissions?.includes(permission)),
+        [isSuperAdmin, user]
     );
     const updateUser = useCallback((nextUser) => setUser(nextUser), []);
 
-    return <AuthContext.Provider value={{ user, isLoading, login, logout, can, updateUser }}>{children}</AuthContext.Provider>;
+    return <AuthContext.Provider value={{ user, isLoading, login, logout, can, isSuperAdmin, updateUser }}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => useContext(AuthContext);

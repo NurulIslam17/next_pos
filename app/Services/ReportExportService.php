@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Http\Resources\PurchaseReportResource;
+use App\Http\Resources\RegistrarReportResource;
 use App\Http\Resources\SalesReportResource;
 use App\Http\Resources\SalesReturnReportResource;
 use App\Http\Resources\StockReportResource;
@@ -70,6 +71,22 @@ class ReportExportService
             'Refund' => 'refund_amount',
             'Reason' => 'return_reason',
         ],
+        'registrar' => [
+            'Date' => 'date',
+            'Type' => 'type',
+            'Reference No' => 'reference_no',
+            'Party' => 'party_name',
+            'Shop' => 'shop_name',
+            'Items' => 'item_count',
+            'Subtotal' => 'subtotal',
+            'Discount' => 'discount',
+            'VAT' => 'vat',
+            'Total' => 'total',
+            'Paid' => 'paid_amount',
+            'Due' => 'due_amount',
+            'Status' => 'status',
+            'Net' => 'net_amount',
+        ],
     ];
 
     private const PURCHASE_TOTAL_FIELDS = [
@@ -80,11 +97,23 @@ class ReportExportService
         'item_count' => 'items_count',
     ];
 
+    private const REGISTRAR_TOTAL_FIELDS = [
+        'item_count' => 'item_count',
+        'subtotal' => 'subtotal',
+        'discount' => 'discount',
+        'vat' => 'vat',
+        'total' => 'total',
+        'paid_amount' => 'paid_amount',
+        'due_amount' => 'due_amount',
+        'net_amount' => 'net_amount',
+    ];
+
     private const RESOURCES = [
         'stocks' => StockReportResource::class,
         'purchases' => PurchaseReportResource::class,
         'sales' => SalesReportResource::class,
         'sales-returns' => SalesReturnReportResource::class,
+        'registrar' => RegistrarReportResource::class,
     ];
 
     public function __construct(protected ReportService $reports) {}
@@ -116,7 +145,11 @@ class ReportExportService
         }
 
         if ($report === 'purchases') {
-            fputcsv($handle, $this->purchaseTotalRow($rows, $columns));
+            fputcsv($handle, $this->totalRow($rows, self::PURCHASE_TOTAL_FIELDS, $columns));
+        }
+
+        if ($report === 'registrar') {
+            fputcsv($handle, $this->totalRow($rows, self::REGISTRAR_TOTAL_FIELDS, $columns));
         }
 
         rewind($handle);
@@ -126,17 +159,17 @@ class ReportExportService
         return $content === false ? '' : $content;
     }
 
-    private function purchaseTotalRow(Collection $purchases, array $columns): array
+    private function totalRow(Collection $rows, array $fields, array $columns): array
     {
         $row = array_fill(0, count($columns), '');
         $row[0] = 'Total';
 
         foreach (array_values($columns) as $index => $key) {
-            if (! array_key_exists($key, self::PURCHASE_TOTAL_FIELDS)) {
+            if (! array_key_exists($key, $fields)) {
                 continue;
             }
 
-            $sum = (float) $purchases->sum(self::PURCHASE_TOTAL_FIELDS[$key]);
+            $sum = (float) $rows->sum($fields[$key]);
             $row[$index] = $key === 'item_count'
                 ? (string) (int) $sum
                 : number_format($sum, 2, '.', '');

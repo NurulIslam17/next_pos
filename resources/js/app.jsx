@@ -8,6 +8,7 @@ import Brands from './pages/config/Brands';
 import Categories from './pages/Categories';
 import Customers from './pages/config/Customers';
 import Dashboard from './pages/Dashboard';
+import LandingPage from './pages/config/LandingPage';
 import PaymentTypes from './pages/config/PaymentTypes';
 import Permissions from './pages/config/Permissions';
 import Roles from './pages/config/Roles';
@@ -15,10 +16,12 @@ import Shops from './pages/config/Shops';
 import ShopMonitor from './pages/ShopMonitor';
 import Suppliers from './pages/config/Suppliers';
 import Users from './pages/config/Users';
+import Home from './pages/Home';
 import Login from './pages/Login';
 import Products from './pages/Products';
 import Purchases from './pages/Purchases';
 import PurchasesReport from './pages/reports/PurchasesReport';
+import RegistrarReport from './pages/reports/RegistrarReport';
 import Sales from './pages/Sales';
 import SalesReport from './pages/reports/SalesReport';
 import SalesReturnReport from './pages/reports/SalesReturnReport';
@@ -38,6 +41,8 @@ const pages = [
     { path: '/reports/purchases', permission: 'reports.view', element: <PurchasesReport /> },
     { path: '/reports/sales', permission: 'reports.view', element: <SalesReport /> },
     { path: '/reports/returns', permission: 'reports.view', element: <SalesReturnReport /> },
+    { path: '/reports/registrar', permission: 'reports.view', element: <RegistrarReport /> },
+    { path: '/configuration/landing-page', permission: 'landing_page.view', element: <LandingPage /> },
     { path: '/configuration/users', permission: 'users.view', element: <Users /> },
     { path: '/configuration/shops', permission: 'shops.view', element: <Shops /> },
     { path: '/configuration/suppliers', permission: 'suppliers.view', element: <Suppliers /> },
@@ -87,6 +92,7 @@ function Landing() {
 function App() {
     return (
         <Routes>
+            <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route
                 element={

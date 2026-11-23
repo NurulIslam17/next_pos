@@ -81,8 +81,8 @@ function ProductDetails({ product }) {
 }
 
 export default function Products() {
-    const { can } = useAuth();
-    const canCreate = can('products.create');
+    const { can, isSuperAdmin } = useAuth();
+    const canCreate = can('products.create') && !isSuperAdmin;
     const canEdit = can('products.update');
     const canDelete = can('products.delete');
     const [products, setProducts] = useState([]);
@@ -195,14 +195,14 @@ export default function Products() {
                             <th className="px-4 py-3">SL</th>
                             <th className="px-4 py-3">Photo</th>
                             <th className="px-4 py-3">Code</th>
-                            <th className="px-4 py-3">Name</th>
+                            <th className="px-4 py-3 whitespace-nowrap">Name</th>
                             <th className="px-4 py-3">Category</th>
                             <th className="px-4 py-3">Brand</th>
                             <th className="px-4 py-3">Supplier</th>
                             <th className="px-4 py-3 text-right">Cost</th>
                             <th className="px-4 py-3 text-right">Price</th>
-                            <th className="px-4 py-3 text-right">Stock</th>
-                            <th className="px-4 py-3 text-right">Stock alert</th>
+                            <th className="px-4 py-3 text-right ">Stock</th>
+                            <th className="px-4 py-3 text-right whitespace-nowrap">Stock alert</th>
                             <th className="px-4 py-3">Status</th>
                             <th className="px-4 py-3 text-center">Actions</th>
                         </tr>
@@ -226,13 +226,13 @@ export default function Products() {
                                         <ProductPhoto image={product.images?.[0]} className="h-10 w-10 rounded object-cover ring-1 ring-slate-200" />
                                     </td>
                                     <td className="whitespace-nowrap px-4 py-3 font-mono text-xs">{product.sku}</td>
-                                    <td className="px-4 py-3 font-medium">{product.name}</td>
-                                    <td className="px-4 py-3 text-slate-600">{product.category ?? '—'}</td>
-                                    <td className="px-4 py-3 text-slate-600">{product.brand ?? '—'}</td>
-                                    <td className="px-4 py-3 text-slate-600">{product.supplier ?? '—'}</td>
+                                    <td className="px-4 py-3 font-medium whitespace-nowrap">{product.name}</td>
+                                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{product.category ?? '—'}</td>
+                                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{product.brand ?? '—'}</td>
+                                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{product.supplier ?? '—'}</td>
                                     <td className="px-4 py-3 text-right tabular-nums">{money(product.cost_price)}</td>
                                     <td className="px-4 py-3 text-right tabular-nums">{money(product.price)}</td>
-                                    <td className="px-4 py-3 text-right tabular-nums">{product.stock}</td>
+                                    <td className="px-4 py-3 text-right tabular-nums whitespace-nowrap">{product.stock}</td>
                                     <td className="px-4 py-3 text-right tabular-nums">
                                         <span className={Number(product.stock_alert) > 0 && Number(product.stock) <= Number(product.stock_alert) ? 'font-medium text-red-600' : 'text-slate-600'}>
                                             {product.stock_alert}

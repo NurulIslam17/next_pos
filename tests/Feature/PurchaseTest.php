@@ -44,15 +44,15 @@ class PurchaseTest extends TestCase
             ->assertJsonPath('data.status', 'pending')
             ->assertJsonPath('data.subtotal', '40.00')
             ->assertJsonPath('data.discount', '5.00')
-            ->assertJsonPath('data.vat', '1.00')
-            ->assertJsonPath('data.total', '36.00')
+            ->assertJsonPath('data.vat', '0.00')
+            ->assertJsonPath('data.total', '35.00')
             ->assertJsonPath('data.paid_amount', '20.00')
-            ->assertJsonPath('data.due_amount', '16.00')
+            ->assertJsonPath('data.due_amount', '15.00')
             ->assertJsonCount(2, 'data.items');
 
         $this->assertDatabaseCount('purchases', 1);
         $this->assertDatabaseCount('purchase_items', 2);
-        $this->assertDatabaseHas('purchase_items', ['product_id' => $first->id, 'quantity' => 2, 'line_total' => 21]);
+        $this->assertDatabaseHas('purchase_items', ['product_id' => $first->id, 'quantity' => 2, 'line_total' => 20]);
         $this->assertDatabaseHas('purchase_items', ['product_id' => $second->id, 'quantity' => 1, 'line_total' => 15]);
         $this->assertSame(5, $first->fresh()->stock);
         $this->assertSame(3, $second->fresh()->stock);

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { BsUpcScan } from 'react-icons/bs';
-import { FiActivity, FiChevronDown, FiChevronRight, FiCreditCard, FiGrid, FiKey, FiLogOut, FiPackage, FiPieChart, FiRotateCcw, FiSettings, FiShield, FiShoppingBag, FiShoppingCart, FiTag, FiTruck, FiUser, FiUsers, FiAward, FiTrendingUp } from 'react-icons/fi';
+import { FiActivity, FiChevronDown, FiChevronRight, FiCreditCard, FiGlobe, FiGrid, FiKey, FiList, FiLogOut, FiPackage, FiPieChart, FiRotateCcw, FiSettings, FiShield, FiShoppingBag, FiShoppingCart, FiTag, FiTruck, FiUser, FiUsers, FiAward, FiTrendingUp } from 'react-icons/fi';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth';
 import ChangePasswordForm from './ChangePasswordForm';
@@ -30,12 +30,14 @@ const navigation = [
             { to: '/reports/purchases', label: 'Purchase Report', icon: FiShoppingCart, permission: 'reports.view' },
             { to: '/reports/sales', label: 'Sales Report', icon: FiTrendingUp, permission: 'reports.view' },
             { to: '/reports/returns', label: 'Sales Return', icon: FiRotateCcw, permission: 'reports.view' },
+            { to: '/reports/registrar', label: 'Registrar Report', icon: FiList, permission: 'reports.view' },
         ],
     },
     {
         label: 'Configuration',
         icon: FiSettings,
         children: [
+            { to: '/configuration/landing-page', label: 'Landing Page', icon: FiGlobe, permission: 'landing_page.view' },
             { to: '/configuration/users', label: 'Users', icon: FiUsers, permission: 'users.view' },
             { to: '/configuration/shops', label: 'Shops', icon: FiShoppingBag, permission: 'shops.view' },
             { to: '/configuration/suppliers', label: 'Suppliers', icon: FiTruck, permission: 'suppliers.view' },

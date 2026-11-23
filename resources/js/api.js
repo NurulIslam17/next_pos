@@ -46,7 +46,15 @@ export async function api(path, { method = 'GET', body, params, responseType } =
             throw new ApiError(payload.message ?? 'Something went wrong', response.status, payload.errors);
         }
 
-        return response.blob();
+        const blob = await response.blob();
+        const disposition = response.headers.get('content-disposition');
+        const filename = disposition?.match(/filename="?([^";]+)"?/i)?.[1];
+
+        if (filename) {
+            blob.filename = decodeURIComponent(filename);
+        }
+
+        return blob;
     }
 
     const payload = await response.json().catch(() => ({}));

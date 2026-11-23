@@ -51,9 +51,7 @@ class PurchaseService
             $quantity = (int) $item['quantity'];
             $unitCost = (float) $item['unit_cost'];
             $discount = round((float) ($item['discount'] ?? 0), 2);
-            $vatRate = (float) ($item['vat_rate'] ?? 0);
             $net = max(($quantity * $unitCost) - $discount, 0);
-            $vat = round($net * ($vatRate / 100), 2);
 
             return [
                 'product_id' => $product->id,
@@ -61,17 +59,17 @@ class PurchaseService
                 'product_sku' => $product->sku,
                 'quantity' => $quantity,
                 'unit_cost' => $unitCost,
-                'vat_rate' => $vatRate,
+                'vat_rate' => 0,
                 'discount' => $discount,
-                'vat' => $vat,
-                'line_total' => round($net + $vat, 2),
+                'vat' => 0,
+                'line_total' => round($net, 2),
             ];
         });
 
         $subtotal = round($preparedItems->sum(fn (array $item): float => $item['quantity'] * $item['unit_cost']), 2);
         $discount = round($preparedItems->sum('discount'), 2);
-        $vat = round($preparedItems->sum('vat'), 2);
-        $total = round($subtotal - $discount + $vat, 2);
+        $vat = 0;
+        $total = round($subtotal - $discount, 2);
         $paidAmount = round((float) ($data['paid_amount'] ?? 0), 2);
 
         if (empty($data['purchase_no']) || $this->purchases->numberExists($data['purchase_no'])) {

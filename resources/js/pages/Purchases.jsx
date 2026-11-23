@@ -197,8 +197,8 @@ export default function Purchases() {
                         <td className="whitespace-nowrap px-4 py-3">{purchase.purchase_no}</td>
                         <td className="whitespace-nowrap px-4 py-3">{purchase.reference_no ?? '-'}</td>
                         <td className="whitespace-nowrap px-4 py-3">{purchase.purchase_date}</td>
-                        <td className="px-4 py-3">{purchase.supplier_name ?? '-'}</td>
-                        <td className="px-4 py-3">{purchase.shop_name ?? '-'}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">{purchase.supplier_name ?? '-'}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">{purchase.shop_name ?? '-'}</td>
                         <td className="px-4 py-3">{purchase.items?.length ?? 0}</td>
                         <td className="whitespace-nowrap px-4 py-3">{money(purchase.total)}</td>
                         <td className="px-4 py-3">

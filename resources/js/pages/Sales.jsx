@@ -107,7 +107,7 @@ const StatusBadge = ({ status }) => (
 );
 
 export default function Sales() {
-    const { can } = useAuth();
+    const { can, isSuperAdmin } = useAuth();
     const [isCreating, setIsCreating] = useState(false);
     const [details, setDetails] = useState(null);
     const [returnReason, setReturnReason] = useState('');
@@ -226,7 +226,7 @@ export default function Sales() {
     return (
         <div className="space-y-4">
             <PageHeader title="Sales" subtitle={meta ? `${meta.total} sales` : 'Sales and returns'}>
-                {can('sales.create') && (
+                {can('sales.create') && !isSuperAdmin && (
                     <button onClick={() => setIsCreating(true)} className={primaryButton}>
                         <FiPlus className="h-4 w-4" /> Add Sale
                     </button>
@@ -305,8 +305,8 @@ export default function Sales() {
                             </button>
                         </td>
                         <td className="whitespace-nowrap px-4 py-3">{sale.sale_date}</td>
-                        <td className="px-4 py-3">{sale.customer_name ?? 'Walk-in Customer'}</td>
-                        <td className="px-4 py-3">{sale.shop_name ?? '-'}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">{sale.customer_name ?? 'Walk-in Customer'}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">{sale.shop_name ?? '-'}</td>
                         <td className="px-4 py-3">{sale.items?.length ?? 0}</td>
                         <td className="whitespace-nowrap px-4 py-3">{money(sale.total)}</td>
                         <td className="px-4 py-3">
