@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { FiImage, FiSave, FiTrash2, FiX } from "react-icons/fi";
 import { api, ApiError } from "../api";
 import { useAuth } from "../auth";
+import CreatableSelect, { optionCode } from "./CreatableSelect";
 import { primaryButton, secondaryButton } from "./ui";
 
 const inputClass =
@@ -31,8 +32,9 @@ export default function ProductForm({
     shops = [],
     onSaved,
     onCancel,
+    onOptionCreated,
 }) {
-    const { user } = useAuth();
+    const { user, can } = useAuth();
     const isManager = user?.role === "manager";
     const [form, setForm] = useState({
         name: product?.name ?? "",
@@ -56,9 +58,10 @@ export default function ProductForm({
     const [errors, setErrors] = useState({});
     const [message, setMessage] = useState("");
     const [isSaving, setIsSaving] = useState(false);
+    const [isSkuAuto, setIsSkuAuto] = useState(!product);
 
     useEffect(() => {
-        if (product) return;
+        if (product || !isSkuAuto) return;
         api("/products/next-sku", {
             params: { shop_id: form.created_by_shop_id || undefined },
         })
@@ -66,7 +69,17 @@ export default function ProductForm({
                 setForm((current) => ({ ...current, sku: response.data.sku })),
             )
             .catch(() => {});
-    }, [product, form.created_by_shop_id]);
+    }, [product, isSkuAuto, form.created_by_shop_id]);
+
+    const toggleSkuMode = () => {
+        if (isSkuAuto) {
+            setIsSkuAuto(false);
+            return;
+        }
+
+        setIsSkuAuto(true);
+        setForm((current) => ({ ...current, sku: "" }));
+    };
 
     useEffect(
         () => () => newImages.forEach(({ url }) => URL.revokeObjectURL(url)),
@@ -81,6 +94,15 @@ export default function ProductForm({
                     ? event.target.checked
                     : event.target.value,
         });
+
+    const setValue = (key) => (value) =>
+        setForm((current) => ({ ...current, [key]: value }));
+
+    const availableShops = isManager
+        ? shops.filter(
+              (shop) => String(shop.id) === String(user?.shop_id),
+          )
+        : shops;
 
     const handleFiles = (event) => {
         const files = Array.from(event.target.files ?? []);
@@ -200,101 +222,113 @@ export default function ProductForm({
                         required
                     />
                 </Field>
-                <Field label="SKU / Code" error={first("sku")}>
-                    {product ? (
-                        <input
-                            className={inputClass}
-                            value={form.sku}
-                            onChange={set("sku")}
-                            required
-                        />
-                    ) : (
-                        <input
-                            className={`${inputClass} cursor-not-allowed bg-slate-50 font-mono text-slate-600`}
-                            value={form.sku}
-                            placeholder="Generated on save"
-                            readOnly
-                        />
+                <div>
+                    <div className="flex items-center justify-between gap-2">
+                        <label htmlFor="sku" className="text-sm font-medium">
+                            SKU / Code
+                        </label>
+                        {!product && (
+                            <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-normal text-slate-600">
+                                <span className="relative">
+                                    <input
+                                        type="checkbox"
+                                        className="peer sr-only"
+                                        checked={isSkuAuto}
+                                        onChange={toggleSkuMode}
+                                    />
+                                    <span className="block h-4 w-7 rounded-full bg-slate-300 transition peer-checked:bg-indigo-600 peer-focus-visible:ring-2 peer-focus-visible:ring-indigo-500/40" />
+                                    <span className="absolute left-0.5 top-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform peer-checked:translate-x-3" />
+                                </span>
+                                <span>Auto Generate</span>
+                            </label>
+                        )}
+                    </div>
+                    <input
+                        id="sku"
+                        className={`${inputClass} font-mono ${!product && isSkuAuto ? "cursor-not-allowed bg-slate-50 text-slate-600" : ""}`}
+                        value={form.sku}
+                        onChange={set("sku")}
+                        placeholder={
+                            !product && isSkuAuto
+                                ? "Generated on save"
+                                : "Enter SKU / Code"
+                        }
+                        readOnly={!product && isSkuAuto}
+                        required={Boolean(product) || !isSkuAuto}
+                        maxLength={15}
+                    />
+                    {first("sku") && (
+                        <span className="mt-1 block text-xs font-normal text-red-600">
+                            {first("sku")}
+                        </span>
                     )}
-                </Field>
+                    <span
+                        className={`mt-1 block text-xs font-normal ${form.sku.length >= 15 ? "text-amber-600" : "text-slate-400"}`}
+                    >
+                        {form.sku.length >= 15
+                            ? "Maximum 15 characters reached."
+                            : `Maximum 15 characters (${form.sku.length}/15).`}
+                    </span>
+                </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
                 <Field label="Shop" error={first("created_by_shop_id")}>
-                    <select
-                        className={`${inputClass} ${isManager || product ? "cursor-not-allowed bg-slate-50" : ""}`}
+                    <CreatableSelect
                         value={form.created_by_shop_id}
-                        onChange={set("created_by_shop_id")}
-                        required
+                        onChange={setValue("created_by_shop_id")}
+                        options={availableShops}
+                        endpoint="/shops"
+                        canCreate={can("shops.create") && !isManager && !product}
+                        createPayload={(name) => optionCode(name, "SHOP", 3)}
+                        onCreated={(option) => onOptionCreated?.("shops", option)}
+                        placeholder={
+                            isManager && !user?.shop_id
+                                ? "No shop assigned"
+                                : "Select shop"
+                        }
                         disabled={isManager || Boolean(product)}
-                    >
-                        <option value="">
-                            {isManager
-                                ? user?.shop_id
-                                    ? "Assigned shop"
-                                    : "No shop assigned"
-                                : "Select shop"}
-                        </option>
-                        {(isManager
-                            ? shops.filter(
-                                  (shop) =>
-                                      String(shop.id) === String(user?.shop_id),
-                              )
-                            : shops
-                        ).map((shop) => (
-                            <option key={shop.id} value={shop.id}>
-                                {shop.name}
-                            </option>
-                        ))}
-                    </select>
+                        required
+                    />
                 </Field>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
                 <Field label="Category" error={first("category_id")}>
-                    <select
-                        className={inputClass}
+                    <CreatableSelect
                         value={form.category_id}
-                        onChange={set("category_id")}
-                    >
-                        <option value="">— None —</option>
-                        {categories.map((category) => (
-                            <option key={category.id} value={category.id}>
-                                {category.name}
-                            </option>
-                        ))}
-                    </select>
+                        onChange={setValue("category_id")}
+                        options={categories}
+                        endpoint="/categories"
+                        canCreate={can("categories.create")}
+                        onCreated={(option) => onOptionCreated?.("categories", option)}
+                        placeholder="Select category"
+                    />
                 </Field>
                 <Field label="Brand" error={first("brand_id")}>
-                    <select
-                        className={inputClass}
+                    <CreatableSelect
                         value={form.brand_id}
-                        onChange={set("brand_id")}
-                    >
-                        <option value="">— None —</option>
-                        {brands.map((brand) => (
-                            <option key={brand.id} value={brand.id}>
-                                {brand.name}
-                            </option>
-                        ))}
-                    </select>
+                        onChange={setValue("brand_id")}
+                        options={brands}
+                        endpoint="/brands"
+                        canCreate={can("brands.create")}
+                        onCreated={(option) => onOptionCreated?.("brands", option)}
+                        placeholder="Select brand"
+                    />
                 </Field>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
                 <Field label="Supplier" error={first("supplier_id")}>
-                    <select
-                        className={inputClass}
+                    <CreatableSelect
                         value={form.supplier_id}
-                        onChange={set("supplier_id")}
-                    >
-                        <option value="">— None —</option>
-                        {suppliers.map((supplier) => (
-                            <option key={supplier.id} value={supplier.id}>
-                                {supplier.name}
-                            </option>
-                        ))}
-                    </select>
+                        onChange={setValue("supplier_id")}
+                        options={suppliers}
+                        endpoint="/suppliers"
+                        canCreate={can("suppliers.create")}
+                        onCreated={(option) => onOptionCreated?.("suppliers", option)}
+                        placeholder="Select supplier"
+                    />
                 </Field>
                 <Field label="Cost price" error={first("cost_price")}>
                     <input

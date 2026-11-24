@@ -43,7 +43,7 @@ class LandingPage extends Model
     public static function defaultContent(): array
     {
         return [
-            'brand_name' => 'My POS',
+            'brand_name' => 'ShopFlow',
             'eyebrow' => 'One workspace for every branch',
             'hero_title' => 'Run every shop from one place.',
             'hero_description' => 'Track sales, purchases, products and stock across all your branches from one fast, simple workspace.',

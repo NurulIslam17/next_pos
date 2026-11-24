@@ -4,9 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\Customer;
 use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\Sale;
+use App\Models\SaleItem;
 use App\Models\Shop;
 use App\Models\Supplier;
 use App\Models\User;
@@ -254,5 +256,137 @@ class DashboardTest extends TestCase
             ->assertJsonPath('data.statistics.purchases.recent.0.purchase_no', 'PUR-SHA')
             ->assertJsonMissing(['purchase_no' => 'PUR-SHB'])
             ->assertJsonMissing(['sale_no' => 'SAL-SHB']);
+    }
+
+    public function test_returns_top_customers_and_top_selling_products(): void
+    {
+        $user = User::factory()->create();
+        $permission = Permission::findOrCreate('dashboard.view', 'web');
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $user->givePermissionTo($permission);
+
+        $topCustomer = Customer::factory()->create(['name' => 'Top Buyer']);
+        $otherCustomer = Customer::factory()->create(['name' => 'Occasional Buyer']);
+
+        $firstSale = Sale::factory()->create([
+            'customer_id' => $topCustomer->id,
+            'sale_date' => '2026-11-18',
+            'status' => 'completed',
+            'total' => 500,
+        ]);
+        $secondSale = Sale::factory()->create([
+            'customer_id' => $topCustomer->id,
+            'sale_date' => '2026-11-19',
+            'status' => 'completed',
+            'total' => 250,
+        ]);
+        $thirdSale = Sale::factory()->create([
+            'customer_id' => $otherCustomer->id,
+            'sale_date' => '2026-11-20',
+            'status' => 'completed',
+            'total' => 100,
+        ]);
+        $returnedSale = Sale::factory()->create([
+            'customer_id' => $otherCustomer->id,
+            'sale_date' => '2026-11-21',
+            'status' => 'returned',
+            'total' => 900,
+        ]);
+
+        SaleItem::factory()->create([
+            'sale_id' => $firstSale->id,
+            'product_name' => 'Coffee',
+            'product_sku' => 'COFFEE-1',
+            'quantity' => 4,
+            'line_total' => 400,
+        ]);
+        SaleItem::factory()->create([
+            'sale_id' => $secondSale->id,
+            'product_name' => 'Coffee',
+            'product_sku' => 'COFFEE-1',
+            'quantity' => 3,
+            'line_total' => 300,
+        ]);
+        SaleItem::factory()->create([
+            'sale_id' => $thirdSale->id,
+            'product_name' => 'Tea',
+            'product_sku' => 'TEA-1',
+            'quantity' => 1,
+            'line_total' => 100,
+        ]);
+        SaleItem::factory()->create([
+            'sale_id' => $returnedSale->id,
+            'product_name' => 'Returned item',
+            'product_sku' => 'RETURN-1',
+            'quantity' => 20,
+            'line_total' => 900,
+        ]);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/dashboard');
+
+        $response->assertOk()
+            ->assertJsonPath('data.statistics.top_customers.0.name', 'Top Buyer')
+            ->assertJsonPath('data.statistics.top_customers.0.orders', 2)
+            ->assertJsonPath('data.statistics.top_customers.0.total', 750)
+            ->assertJsonPath('data.statistics.top_customers.1.name', 'Occasional Buyer')
+            ->assertJsonPath('data.statistics.top_customers.1.orders', 1)
+            ->assertJsonPath('data.statistics.top_customers.1.total', 100)
+            ->assertJsonPath('data.statistics.top_products.0.name', 'Coffee')
+            ->assertJsonPath('data.statistics.top_products.0.units_sold', 7)
+            ->assertJsonPath('data.statistics.top_products.0.total', 700)
+            ->assertJsonPath('data.statistics.top_products.1.name', 'Tea')
+            ->assertJsonPath('data.statistics.top_products.1.units_sold', 1)
+            ->assertJsonMissing(['name' => 'Returned item']);
+    }
+
+    public function test_manager_only_sees_own_shop_top_performers(): void
+    {
+        $shopA = Shop::create(['name' => 'Shop A', 'code' => 'SHA']);
+        $shopB = Shop::create(['name' => 'Shop B', 'code' => 'SHB']);
+        $manager = User::factory()->create(['shop_id' => $shopA->id]);
+        Role::findOrCreate('manager', 'web');
+        $manager->assignRole('manager');
+        $permission = Permission::findOrCreate('dashboard.view', 'web');
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $manager->givePermissionTo($permission);
+
+        $ownCustomer = Customer::factory()->create(['name' => 'Own Customer']);
+        $otherCustomer = Customer::factory()->create(['name' => 'Other Customer']);
+        $ownSale = Sale::factory()->create([
+            'shop_id' => $shopA->id,
+            'customer_id' => $ownCustomer->id,
+            'status' => 'completed',
+            'total' => 120,
+        ]);
+        $otherSale = Sale::factory()->create([
+            'shop_id' => $shopB->id,
+            'customer_id' => $otherCustomer->id,
+            'status' => 'completed',
+            'total' => 900,
+        ]);
+        SaleItem::factory()->create([
+            'sale_id' => $ownSale->id,
+            'product_name' => 'Own Product',
+            'product_sku' => 'OWN-1',
+            'quantity' => 2,
+            'line_total' => 120,
+        ]);
+        SaleItem::factory()->create([
+            'sale_id' => $otherSale->id,
+            'product_name' => 'Other Product',
+            'product_sku' => 'OTHER-1',
+            'quantity' => 30,
+            'line_total' => 900,
+        ]);
+
+        $response = $this->actingAs($manager)->getJson('/api/v1/dashboard');
+
+        $response->assertOk()
+            ->assertJsonCount(1, 'data.statistics.top_customers')
+            ->assertJsonPath('data.statistics.top_customers.0.name', 'Own Customer')
+            ->assertJsonCount(1, 'data.statistics.top_products')
+            ->assertJsonPath('data.statistics.top_products.0.name', 'Own Product')
+            ->assertJsonMissing(['name' => 'Other Customer'])
+            ->assertJsonMissing(['name' => 'Other Product']);
     }
 }

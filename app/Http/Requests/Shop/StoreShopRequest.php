@@ -15,7 +15,7 @@ class StoreShopRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'code' => ['required', 'string', 'max:50', 'unique:shops,code'],
+            'code' => ['required', 'string', 'max:3', 'unique:shops,code'],
             'address' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
             'is_active' => ['sometimes', 'boolean'],

@@ -107,7 +107,10 @@ export default function Layout() {
     return (
         <div className="app-shell flex h-screen overflow-hidden">
             <aside className="hidden w-60 shrink-0 flex-col overflow-y-auto bg-slate-900 text-slate-200 md:flex">
-                <div className="px-6 py-5 text-lg font-semibold tracking-tight text-white">My POS</div>
+                <div className="flex items-center gap-3 px-6 py-5">
+                    <img src="/shopflow-mark.svg" alt="" className="h-9 w-9 rounded-xl" />
+                    <span className="text-lg font-semibold tracking-tight text-white">ShopFlow</span>
+                </div>
                 <nav className="flex-1 space-y-1 px-3">
                     {navigation
                         .filter((entry) => !entry.children && can(entry.permission))
@@ -132,7 +135,10 @@ export default function Layout() {
 
             <div className="flex min-h-0 min-w-0 flex-1 flex-col">
                 <header className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 py-3 sm:px-6">
-                    <span className="font-semibold md:hidden">My POS</span>
+                    <div className="flex items-center gap-2 md:hidden">
+                        <img src="/shopflow-mark.svg" alt="" className="h-8 w-8 rounded-lg" />
+                        <span className="font-semibold">ShopFlow</span>
+                    </div>
                     <div className="relative ml-auto" ref={userMenuRef}>
                         <button
                             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}

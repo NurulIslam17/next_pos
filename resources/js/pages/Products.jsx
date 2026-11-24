@@ -150,6 +150,17 @@ export default function Products() {
         load();
     };
 
+    const handleOptionCreated = (type, option) => {
+        const setters = {
+            categories: setCategories,
+            brands: setBrands,
+            suppliers: setSuppliers,
+            shops: setShops,
+        };
+
+        setters[type]?.((current) => [...current, option]);
+    };
+
     return (
         <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -280,7 +291,7 @@ export default function Products() {
 
             {editing && (
                 <Modal title={editing.id ? 'Edit product' : 'Add product'} onClose={() => setEditing(null)} size="lg">
-                    <ProductForm product={editing.id ? editing : null} categories={categories} brands={brands} suppliers={suppliers} shops={shops} onSaved={handleSaved} onCancel={() => setEditing(null)} />
+                    <ProductForm product={editing.id ? editing : null} categories={categories} brands={brands} suppliers={suppliers} shops={shops} onSaved={handleSaved} onCancel={() => setEditing(null)} onOptionCreated={handleOptionCreated} />
                 </Modal>
             )}
             {details && (

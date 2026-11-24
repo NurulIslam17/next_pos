@@ -16,7 +16,7 @@ class UpdateShopRequest extends FormRequest
     {
         return [
             'name' => ['sometimes', 'string', 'max:255'],
-            'code' => ['sometimes', 'string', 'max:50', Rule::unique('shops', 'code')->ignore($this->route('shop'))],
+            'code' => ['sometimes', 'string', 'max:3', Rule::unique('shops', 'code')->ignore($this->route('shop'))],
             'address' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
             'is_active' => ['sometimes', 'boolean'],
