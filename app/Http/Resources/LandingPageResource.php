@@ -12,7 +12,7 @@ class LandingPageResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'brand_name' => $this->brand_name,
+            'brand_name' => $this->brand_name === 'My POS' ? 'ShopFlow' : $this->brand_name,
             'eyebrow' => $this->eyebrow,
             'hero_title' => $this->hero_title,
             'hero_description' => $this->hero_description,

@@ -86,6 +86,31 @@ class ProductCreateTest extends TestCase
         $this->assertStringStartsWith('CTG'.now()->format('ymd'), $response->json('data.sku'));
     }
 
+    public function test_rejects_sku_longer_than_15_characters(): void
+    {
+        $shop = Shop::create(['name' => 'Dhaka', 'code' => 'DHK']);
+        $admin = $this->superAdmin();
+
+        $this->actingAs($admin)->postJson('/api/v1/products', [
+            ...$this->payload($shop->id, 'LONG-SKU-PRODUCT'),
+            'sku' => str_repeat('A', 16),
+        ])->assertUnprocessable()->assertJsonValidationErrors('sku');
+
+        $this->assertDatabaseMissing('products', ['name' => 'LONG-SKU-PRODUCT']);
+    }
+
+    public function test_generated_sku_fits_within_15_characters_for_long_shop_code(): void
+    {
+        $shop = Shop::create(['name' => 'Long Code Shop', 'code' => 'VERYLONGSHOPCODE']);
+        $admin = $this->superAdmin();
+
+        $response = $this->actingAs($admin)->getJson('/api/v1/products/next-sku?shop_id='.$shop->id);
+
+        $response->assertOk();
+        $this->assertSame(15, strlen($response->json('data.sku')));
+        $this->assertStringStartsWith('VERYL'.now()->format('ymd'), $response->json('data.sku'));
+    }
+
     /** @return array<string, mixed> */
     private function payload(?int $shopId, string $name): array
     {

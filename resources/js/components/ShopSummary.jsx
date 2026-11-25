@@ -1,4 +1,4 @@
-import { FiAlertTriangle, FiBox, FiCheckCircle, FiClock, FiCreditCard, FiDollarSign, FiLayers, FiPackage, FiRotateCcw, FiShoppingBag, FiTag, FiTruck, FiTrendingUp } from 'react-icons/fi';
+import { FiAlertTriangle, FiBox, FiCheckCircle, FiClock, FiCreditCard, FiDollarSign, FiLayers, FiPackage, FiRotateCcw, FiShoppingBag, FiStar, FiTag, FiTruck, FiTrendingUp, FiUsers } from 'react-icons/fi';
 
 export const palette = ['#4f46e5', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b', '#ec4899'];
 export const money = (value) => Number(value ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -167,6 +167,99 @@ function TopCategories({ items }) {
     );
 }
 
+const medalStyles = [
+    'bg-amber-50 text-amber-500 ring-amber-200',
+    'bg-slate-100 text-slate-400 ring-slate-300',
+    'bg-orange-50 text-orange-700 ring-orange-200',
+];
+
+function RankedList({ items, emptyText, amountLabel, medals = false }) {
+    if (!items.length) {
+        return <p className="py-6 text-center text-sm text-slate-400">{emptyText}</p>;
+    }
+
+    return (
+        <div className="divide-y divide-slate-100">
+            {items.map((item, index) => (
+                <div key={item.id ?? index} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                    {medals && index < 3 ? (
+                        <span className={`flex h-8 w-8 shrink-0 flex-col items-center justify-center rounded-full ring-1 ${medalStyles[index]}`}>
+                            <FiStar className="h-3 w-3 fill-current" />
+                            <span className="text-[9px] font-bold leading-none">{index + 1}</span>
+                        </span>
+                    ) : (
+                        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${index === 0 && !medals ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                            {index + 1}
+                        </span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-slate-800">{item.name}</p>
+                        <p className="truncate text-xs text-slate-400">{item.subtitle}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                        <p className="text-sm font-semibold tabular-nums text-slate-900">{money(item.total)}</p>
+                        <p className="text-xs text-slate-400">{amountLabel}</p>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+function ProductStatusBlock({ summary }) {
+    return (
+        <div className="border-t border-slate-100 pt-4">
+            <h2 className="mb-3 font-semibold text-slate-900">Product status</h2>
+            <StatusSplit items={[
+                { label: 'Active', count: summary.active_products ?? 0, color: 'bg-emerald-500' },
+                { label: 'Inactive', count: summary.inactive_products ?? 0, color: 'bg-slate-300' },
+            ]} />
+        </div>
+    );
+}
+
+function PurchaseStatusBlock({ purchaseStatuses, totalDue }) {
+    return (
+        <div className="border-t border-slate-100 pt-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+                <h2 className="font-semibold text-slate-900">Purchase status</h2>
+                <span className="text-xs text-slate-500">Due {money(totalDue)}</span>
+            </div>
+            <StatusSplit items={purchaseStatuses.map((item, index) => ({
+                label: item.name,
+                count: item.count,
+                color: index === 0 ? 'bg-amber-500' : 'bg-emerald-500',
+            }))} />
+        </div>
+    );
+}
+
+export function TopPerformerPanels({ catalogue, topProducts, summary, purchaseStatuses, totalDue }) {
+    const products = topProducts.map((item) => ({
+        ...item,
+        subtitle: `${item.sku} · ${number(item.units_sold)} sold`,
+    }));
+
+    return (
+        <section className="grid gap-4 xl:grid-cols-2">
+            <div className="rounded-xl bg-white p-5 ring-1 ring-slate-200">
+                <h2 className="font-semibold text-slate-900">Catalogue</h2>
+                {/* <p className="mb-4 mt-1 text-xs text-slate-500">Master data counts.</p> */}
+                <CatalogueCounts counts={catalogue} />
+                <ProductStatusBlock summary={summary} />
+                <PurchaseStatusBlock purchaseStatuses={purchaseStatuses} totalDue={totalDue} />
+            </div>
+            <div className="rounded-xl bg-white p-5 ring-1 ring-slate-200">
+                <div className="mb-4 flex items-center gap-2">
+                    <FiTrendingUp className="h-4 w-4 text-emerald-500" />
+                    <h2 className="font-semibold text-slate-900">Top selling products</h2>
+                </div>
+                <RankedList items={products} emptyText="No product sales yet." amountLabel="Revenue" />
+            </div>
+        </section>
+    );
+}
+
 export function SummaryCards({ summary }) {
     return (
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -186,7 +279,12 @@ export function SummaryCards({ summary }) {
     );
 }
 
-export function OverviewPanels({ productsByCategory, purchaseStatuses, summary, catalogue, totalDue }) {
+export function OverviewPanels({ productsByCategory, purchaseStatuses, summary, catalogue, topCustomers, totalDue }) {
+    const customers = (topCustomers ?? []).map((item) => ({
+        ...item,
+        subtitle: `${number(item.orders)} orders`,
+    }));
+
     return (
         <section className="grid gap-4 xl:grid-cols-3">
             <div className="rounded-xl bg-white p-5 ring-1 ring-slate-200 xl:col-span-2">
@@ -196,28 +294,28 @@ export function OverviewPanels({ productsByCategory, purchaseStatuses, summary, 
             </div>
             <div className="space-y-5 rounded-xl bg-white p-5 ring-1 ring-slate-200">
                 <div>
-                    <h2 className="font-semibold text-slate-900">Catalogue</h2>
-                    <p className="mb-4 mt-1 text-xs text-slate-500">Master data counts.</p>
-                    <CatalogueCounts counts={catalogue} />
+                    {topCustomers ? (
+                        <>
+                            <div className="mb-4 flex items-center gap-2">
+                                <FiUsers className="h-4 w-4 text-indigo-500" />
+                                <h2 className="font-semibold text-slate-900">Top customers</h2>
+                            </div>
+                            <RankedList items={customers} emptyText="No customer sales yet." amountLabel="Sales" medals />
+                        </>
+                    ) : (
+                        <>
+                            <h2 className="font-semibold text-slate-900">Catalogue</h2>
+                            <p className="mb-4 mt-1 text-xs text-slate-500">Master data counts.</p>
+                            <CatalogueCounts counts={catalogue} />
+                        </>
+                    )}
                 </div>
-                <div className="border-t border-slate-100 pt-4">
-                    <h2 className="mb-3 font-semibold text-slate-900">Product status</h2>
-                    <StatusSplit items={[
-                        { label: 'Active', count: summary.active_products ?? 0, color: 'bg-emerald-500' },
-                        { label: 'Inactive', count: summary.inactive_products ?? 0, color: 'bg-slate-300' },
-                    ]} />
-                </div>
-                <div className="border-t border-slate-100 pt-4">
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                        <h2 className="font-semibold text-slate-900">Purchase status</h2>
-                        <span className="text-xs text-slate-500">Due {money(totalDue)}</span>
-                    </div>
-                    <StatusSplit items={purchaseStatuses.map((item, index) => ({
-                        label: item.name,
-                        count: item.count,
-                        color: index === 0 ? 'bg-amber-500' : 'bg-emerald-500',
-                    }))} />
-                </div>
+                {!topCustomers && (
+                    <>
+                        <ProductStatusBlock summary={summary} />
+                        <PurchaseStatusBlock purchaseStatuses={purchaseStatuses} totalDue={totalDue} />
+                    </>
+                )}
             </div>
         </section>
     );
@@ -242,7 +340,7 @@ export function DetailPanels({ productsByCategory, lowStock, recentPurchases }) 
             </div>
             <div className="rounded-xl bg-white p-5 ring-1 ring-slate-200">
                 <h2 className="mb-4 font-semibold text-slate-900">Top categories</h2>
-                <TopCategories items={productsByCategory.slice(0, 5)} />
+                <TopCategories items={productsByCategory.slice(0, 7)} />
             </div>
         </section>
     );

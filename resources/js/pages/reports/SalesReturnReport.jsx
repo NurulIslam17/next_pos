@@ -1,7 +1,7 @@
 import ReportPage, { money } from "./ReportPage";
 
 const filters = [
-    { key: "shop_id", label: "Shop", type: "select" },
+    { key: "shop_id", label: "Shop", type: "select", className: "min-w-[350px] flex-1" },
     {
         key: "search",
         label: "Search",

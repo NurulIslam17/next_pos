@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { FiRefreshCw } from 'react-icons/fi';
 import { api } from '../api';
-import { DetailPanels, OverviewPanels, SummaryCards } from '../components/ShopSummary';
+import { DetailPanels, OverviewPanels, SummaryCards, TopPerformerPanels } from '../components/ShopSummary';
 import { ErrorBanner } from '../components/ui';
 
 export default function Dashboard() {
@@ -60,7 +60,14 @@ export default function Dashboard() {
                 productsByCategory={productsByCategory}
                 purchaseStatuses={purchaseStatuses}
                 summary={summary}
+                topCustomers={statistics.top_customers ?? []}
+                totalDue={purchases.total_due}
+            />
+            <TopPerformerPanels
                 catalogue={statistics.catalogue ?? {}}
+                topProducts={statistics.top_products ?? []}
+                summary={summary}
+                purchaseStatuses={purchaseStatuses}
                 totalDue={purchases.total_due}
             />
             <DetailPanels

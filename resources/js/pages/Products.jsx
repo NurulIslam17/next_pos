@@ -100,6 +100,7 @@ export default function Products() {
     const categoryId = searchParams.get('category_id') ?? '';
     const [editing, setEditing] = useState(null); // null = closed, {} = new, product = edit
     const [details, setDetails] = useState(null);
+    const [addDraft, setAddDraft] = useState(null);
 
     const load = useCallback(async () => {
         setIsLoading(true);
@@ -146,8 +147,20 @@ export default function Products() {
     };
 
     const handleSaved = () => {
+        if (!editing?.id) setAddDraft(null);
         setEditing(null);
         load();
+    };
+
+    const handleOptionCreated = (type, option) => {
+        const setters = {
+            categories: setCategories,
+            brands: setBrands,
+            suppliers: setSuppliers,
+            shops: setShops,
+        };
+
+        setters[type]?.((current) => [...current, option]);
     };
 
     return (
@@ -280,7 +293,18 @@ export default function Products() {
 
             {editing && (
                 <Modal title={editing.id ? 'Edit product' : 'Add product'} onClose={() => setEditing(null)} size="lg">
-                    <ProductForm product={editing.id ? editing : null} categories={categories} brands={brands} suppliers={suppliers} shops={shops} onSaved={handleSaved} onCancel={() => setEditing(null)} />
+                    <ProductForm
+                        product={editing.id ? editing : null}
+                        categories={categories}
+                        brands={brands}
+                        suppliers={suppliers}
+                        shops={shops}
+                        onSaved={handleSaved}
+                        onCancel={() => setEditing(null)}
+                        onOptionCreated={handleOptionCreated}
+                        draft={editing.id ? null : addDraft}
+                        onDraftChange={editing.id ? undefined : setAddDraft}
+                    />
                 </Modal>
             )}
             {details && (

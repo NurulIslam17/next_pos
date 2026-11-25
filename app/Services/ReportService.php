@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Expense;
 use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\Sale;
@@ -122,6 +123,60 @@ class ReportService
         );
 
         return ['paginator' => $paginator, 'summary' => $summary];
+    }
+
+    public function dailyRegistrar(array $filters): array
+    {
+        $date = $filters['date'] ?? now()->toDateString();
+        $dayFilters = array_merge($filters, ['date_from' => $date, 'date_to' => $date]);
+
+        $purchases = $this->purchasesQuery(array_merge($dayFilters, ['status' => 'approved']))
+            ->withCount('items')
+            ->orderByDesc('purchases.purchase_date')
+            ->orderByDesc('purchases.id')
+            ->get()
+            ->map(fn (Purchase $purchase): array => $this->dailyPurchaseRow($purchase))
+            ->values()
+            ->all();
+
+        $expenses = $this->expensesQuery($dayFilters)
+            ->orderByDesc('expenses.expense_date')
+            ->orderByDesc('expenses.id')
+            ->get()
+            ->map(fn (Expense $expense): array => $this->dailyExpenseRow($expense))
+            ->values()
+            ->all();
+
+        $sales = $this->salesQuery($dayFilters)
+            ->withCount('items')
+            ->orderByDesc('sales.sale_date')
+            ->orderByDesc('sales.id')
+            ->get()
+            ->map(fn (Sale $sale): array => $this->dailySaleRow($sale))
+            ->values()
+            ->all();
+
+        $purchaseTotal = round(collect($purchases)->sum('total'), 2);
+        $expenseTotal = round(collect($expenses)->sum('amount'), 2);
+        $salesTotal = round(collect($sales)->sum('total'), 2);
+
+        return [
+            'date' => $date,
+            'purchases' => $purchases,
+            'expenses' => $expenses,
+            'sales' => $sales,
+            'summary' => [
+                'purchase_count' => count($purchases),
+                'purchase_total' => $purchaseTotal,
+                'purchase_paid' => round(collect($purchases)->sum('paid_amount'), 2),
+                'expense_count' => count($expenses),
+                'expense_total' => $expenseTotal,
+                'sales_count' => count($sales),
+                'sales_total' => $salesTotal,
+                'sales_paid' => round(collect($sales)->sum('paid_amount'), 2),
+                'net_amount' => round($salesTotal - $purchaseTotal - $expenseTotal, 2),
+            ],
+        ];
     }
 
     public function rows(string $report, array $filters): Collection
@@ -255,6 +310,26 @@ class ReportService
         return $query;
     }
 
+    private function expensesQuery(array $filters): Builder
+    {
+        $query = Expense::query()->with(['shop:id,name,code']);
+
+        $search = $this->searchTerm($filters);
+        if ($search !== null) {
+            $term = $this->likeTerm($search);
+            $query->where(function ($query) use ($term) {
+                $query->where('expenses.category', 'like', $term)
+                    ->orWhere('expenses.reference_no', 'like', $term)
+                    ->orWhere('expenses.note', 'like', $term);
+            });
+        }
+
+        $this->applyShopFilter($query, 'expenses.shop_id', $filters);
+        $this->applyDateRange($query, 'expenses.expense_date', $filters);
+
+        return $query;
+    }
+
     private function registrarRows(array $filters): Collection
     {
         $purchases = $this->purchasesQuery($filters)
@@ -349,6 +424,51 @@ class ReportService
             'status' => 'Refunded',
             'net_amount' => -$refund,
             'sort_at' => $sale->returned_at ?? $sale->sale_date,
+        ];
+    }
+
+    private function dailyPurchaseRow(Purchase $purchase): array
+    {
+        return [
+            'id' => $purchase->id,
+            'date' => $purchase->purchase_date?->toDateString() ?? '',
+            'reference_no' => $purchase->purchase_no,
+            'party_name' => $purchase->supplier?->name ?? '-',
+            'shop_name' => $purchase->shop?->name ?? '-',
+            'item_count' => (int) ($purchase->items_count ?? 0),
+            'total' => (float) $purchase->total,
+            'paid_amount' => (float) $purchase->paid_amount,
+            'due_amount' => (float) $purchase->due_amount,
+            'status' => ucfirst((string) $purchase->status),
+        ];
+    }
+
+    private function dailyExpenseRow(Expense $expense): array
+    {
+        return [
+            'id' => $expense->id,
+            'date' => $expense->expense_date?->toDateString() ?? '',
+            'category' => $expense->category,
+            'reference_no' => $expense->reference_no ?? '-',
+            'shop_name' => $expense->shop?->name ?? '-',
+            'note' => $expense->note ?? '-',
+            'amount' => (float) $expense->amount,
+        ];
+    }
+
+    private function dailySaleRow(Sale $sale): array
+    {
+        return [
+            'id' => $sale->id,
+            'date' => $sale->sale_date?->toDateString() ?? '',
+            'reference_no' => $sale->sale_no,
+            'party_name' => $sale->customer?->name ?? 'Walk-in Customer',
+            'shop_name' => $sale->shop?->name ?? '-',
+            'item_count' => (int) ($sale->items_count ?? 0),
+            'total' => (float) $sale->total,
+            'paid_amount' => (float) $sale->paid_amount,
+            'due_amount' => (float) $sale->due_amount,
+            'status' => ucfirst((string) $sale->status),
         ];
     }
 

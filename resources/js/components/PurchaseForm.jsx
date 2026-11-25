@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FiLock, FiPlus, FiSearch, FiTrash2 } from "react-icons/fi";
 import { api } from "../api";
 import { useAuth } from "../auth";
+import CreatableSelect, { optionCode } from "./CreatableSelect";
 import {
     ErrorBanner,
     Field,
@@ -89,7 +90,7 @@ function validatePurchase(form, items) {
 }
 
 export default function PurchaseForm({ onSaved, onCancel }) {
-    const { user } = useAuth();
+    const { user, can } = useAuth();
     const isManager = user?.role === "manager";
     const today = new Date().toISOString().slice(0, 10);
     const [form, setForm] = useState({
@@ -126,6 +127,22 @@ export default function PurchaseForm({ onSaved, onCancel }) {
             ),
         );
         setValidationMessage("");
+    };
+
+    const availableShops = isManager
+        ? shops.filter(
+              (shop) => String(shop.id) === String(user.shop_id),
+          )
+        : shops;
+
+    const handleOptionCreated = (type, option) => {
+        const setters = {
+            suppliers: setSuppliers,
+            shops: setShops,
+            payment_types: setPaymentTypes,
+        };
+
+        setters[type]?.((current) => [...current, option]);
     };
 
     useEffect(() => {
@@ -323,81 +340,71 @@ export default function PurchaseForm({ onSaved, onCancel }) {
                         label={<RequiredLabel>Supplier</RequiredLabel>}
                         error={fieldError("supplier_id")}
                     >
-                        <select
+                        <CreatableSelect
                             value={form.supplier_id}
                             required
-                            onChange={(event) =>
-                                setField("supplier_id", event.target.value)
+                            invalid={Boolean(fieldError("supplier_id"))}
+                            options={suppliers}
+                            endpoint="/suppliers"
+                            canCreate={can("suppliers.create")}
+                            onCreated={(option) =>
+                                handleOptionCreated("suppliers", option)
                             }
-                            className={inputClassFor("supplier_id")}
-                        >
-                            <option value="">Select supplier</option>
-                            {suppliers.map((supplier) => (
-                                <option key={supplier.id} value={supplier.id}>
-                                    {supplier.name}
-                                </option>
-                            ))}
-                        </select>
+                            onChange={(value) =>
+                                setField("supplier_id", value)
+                            }
+                            placeholder="Select supplier"
+                        />
                     </Field>
                     <Field
                         label={<RequiredLabel>Shop</RequiredLabel>}
                         error={fieldError("shop_id")}
                     >
-                        <select
+                        <CreatableSelect
                             value={form.shop_id}
                             required
                             disabled={isManager}
-                            onChange={(event) => {
-                                setField("shop_id", event.target.value);
+                            invalid={Boolean(fieldError("shop_id"))}
+                            options={availableShops}
+                            endpoint="/shops"
+                            canCreate={can("shops.create") && !isManager}
+                            createPayload={(name) => optionCode(name, "SHOP", 3)}
+                            onCreated={(option) =>
+                                handleOptionCreated("shops", option)
+                            }
+                            onChange={(value) => {
+                                setField("shop_id", value);
                                 setItems([]);
                                 setProductSearch("");
                                 clearValidationErrors("items");
                             }}
-                            className={inputClassFor(
-                                "shop_id",
-                                "disabled:bg-slate-50",
-                            )}
-                        >
-                            <option value="">
-                                {isManager
-                                    ? user.shop_id
-                                        ? "Assigned shop"
-                                        : "No shop assigned"
-                                    : "Select shop"}
-                            </option>
-                            {(isManager
-                                ? shops.filter(
-                                      (shop) =>
-                                          String(shop.id) ===
-                                          String(user.shop_id),
-                                  )
-                                : shops
-                            ).map((shop) => (
-                                <option key={shop.id} value={shop.id}>
-                                    {shop.name}
-                                </option>
-                            ))}
-                        </select>
+                            placeholder={
+                                isManager && !user.shop_id
+                                    ? "No shop assigned"
+                                    : "Select shop"
+                            }
+                        />
                     </Field>
                     <Field
                         label={<RequiredLabel>Payment Type</RequiredLabel>}
                         error={fieldError("payment_type_id")}
                     >
-                        <select
+                        <CreatableSelect
                             value={form.payment_type_id}
                             required
-                            onChange={(event) =>
-                                setField("payment_type_id", event.target.value)
+                            invalid={Boolean(fieldError("payment_type_id"))}
+                            options={paymentTypes}
+                            endpoint="/payment-types"
+                            canCreate={can("payment_types.create")}
+                            createPayload={(name) => optionCode(name, "PAY")}
+                            onCreated={(option) =>
+                                handleOptionCreated("payment_types", option)
                             }
-                            className={inputClassFor("payment_type_id")}
-                        >
-                            <option value="">Select payment type</option>
-                            {paymentTypes.map((type) => (
-                                <option key={type.id} value={type.id}>
-                                    {type.name}
-                                </option>
-                            ))}
-                        </select>
+                            onChange={(value) =>
+                                setField("payment_type_id", value)
+                            }
+                            placeholder="Select payment type"
+                        />
                     </Field>
                     <Field label="Reference No" error={first("reference_no")}>
                         <input

@@ -85,6 +85,39 @@ class DashboardService
             ->selectRaw("COUNT(CASE WHEN sales.status = 'completed' THEN 1 END) as total_count, COALESCE(SUM(CASE WHEN sales.status = 'completed' THEN sales.total ELSE 0 END), 0) as total_amount, COUNT(CASE WHEN sales.status = 'returned' THEN 1 END) as returned_count, COALESCE(SUM(CASE WHEN sales.status = 'returned' THEN sales.refund_amount ELSE 0 END), 0) as returned_amount")
             ->first();
 
+        $topCustomers = (clone $sales)
+            ->join('customers', 'customers.id', '=', 'sales.customer_id')
+            ->where('sales.status', 'completed')
+            ->selectRaw('customers.id as customer_id, customers.name as name, COUNT(*) as orders_count, COALESCE(SUM(sales.total), 0) as total_amount')
+            ->groupBy('customers.id', 'customers.name')
+            ->orderByDesc('total_amount')
+            ->limit(5)
+            ->get()
+            ->map(fn ($row): array => [
+                'id' => (int) $row->customer_id,
+                'name' => (string) $row->name,
+                'orders' => (int) $row->orders_count,
+                'total' => (float) $row->total_amount,
+            ])
+            ->all();
+
+        $topProducts = (clone $sales)
+            ->join('sale_items', 'sale_items.sale_id', '=', 'sales.id')
+            ->where('sales.status', 'completed')
+            ->selectRaw('sale_items.product_id as product_id, sale_items.product_name as name, sale_items.product_sku as sku, SUM(sale_items.quantity) as units_sold, COALESCE(SUM(sale_items.line_total), 0) as total_amount')
+            ->groupBy('sale_items.product_id', 'sale_items.product_name', 'sale_items.product_sku')
+            ->orderByDesc('units_sold')
+            ->limit(5)
+            ->get()
+            ->map(fn ($row): array => [
+                'id' => $row->product_id === null ? null : (int) $row->product_id,
+                'name' => (string) $row->name,
+                'sku' => (string) $row->product_sku,
+                'units_sold' => (int) $row->units_sold,
+                'total' => (float) $row->total_amount,
+            ])
+            ->all();
+
         $catalogue = $shopId !== null
             ? [
                 'categories' => (int) (clone $products)->distinct()->count('products.category_id'),
@@ -136,6 +169,8 @@ class DashboardService
                     ])
                     ->all(),
                 'catalogue' => $catalogue,
+                'top_customers' => $topCustomers,
+                'top_products' => $topProducts,
                 'purchases' => [
                     'total_due' => (float) $purchaseTotals->total_due_amount,
                     'recent' => $recentPurchases,

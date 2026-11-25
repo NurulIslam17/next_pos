@@ -8,6 +8,7 @@ use App\Repositories\Contracts\ProductRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class ProductService
@@ -33,14 +34,14 @@ class ProductService
     }
 
     /**
-     * Builds a unique product code: {ShopCode}{yy}{mm}{dd}{4 random digits}, with no separators,
-     * e.g. SHOP03 + 261116 + 4827 = SHOP032611164827.
+     * Builds a unique product code: {ShopCode:5}{yy}{mm}{dd}{4 random digits}, with no separators.
      * Users without a shop (e.g. the super admin) get the "HQ" prefix.
      */
     public function generateSku(?int $shopId): string
     {
         $shopCode = ($shopId ? Shop::whereKey($shopId)->value('code') : null) ?? 'HQ';
-        $prefix = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $shopCode)).now()->format('ymd');
+        $cleanCode = strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', $shopCode));
+        $prefix = Str::substr($cleanCode, 0, 5).now()->format('ymd');
 
         do {
             $sku = $prefix.str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);

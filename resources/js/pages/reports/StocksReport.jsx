@@ -2,7 +2,7 @@ import { Badge } from '../../components/ui';
 import ReportPage, { money, number } from './ReportPage';
 
 const filters = [
-    { key: 'shop_id', label: 'Shop', type: 'select' },
+    { key: 'shop_id', label: 'Shop', type: 'select' ,className: 'min-w-[180px] flex-1'},
     { key: 'search', label: 'Search', type: 'search', placeholder: 'SKU or product name…', className: 'min-w-[240px] flex-1' },
     {
         key: 'stock_status',

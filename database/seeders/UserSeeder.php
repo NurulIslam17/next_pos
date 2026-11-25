@@ -8,7 +8,7 @@ use Illuminate\Database\Seeder;
 
 class UserSeeder extends Seeder
 {
-    private const PASSWORD = 'password';
+    private const PASSWORD = 'prantik@2026';
 
     public function run(): void
     {
@@ -25,20 +25,20 @@ class UserSeeder extends Seeder
         ];
         // Super admin: full access across every shop.
         User::updateOrCreate(
-            ['email' => 'superadmin@pos.test'],
+            ['email' => 'admin@prantikdss.govt.bd'],
             $this->profile('Super Admin', 0, null, 80000),
         )->syncRoles('super_admin');
 
         // Viewer: read-only access to the whole system.
         User::updateOrCreate(
-            ['email' => 'viewer@pos.test'],
+            ['email' => 'viewer@prantikdss.govt.bd'],
             $this->profile('Viewer', 9, null, 25000),
         )->syncRoles('viewer');
 
         // One manager per shop.
         foreach (Shop::orderBy('id')->get() as $i => $shop) {
             User::updateOrCreate(
-                ['email' => 'manager'.($i + 1).'@pos.test'],
+                ['email' => 'manager'.($i + 1).'@prantikdss.govt.bd'],
                 $this->profile("পরিচালক - {$cities[$i]['name']}", $i + 1, $shop->id, 35000),
             )->syncRoles('manager');
         }

@@ -8,6 +8,7 @@ use App\Http\Resources\RegistrarReportResource;
 use App\Http\Resources\SalesReportResource;
 use App\Http\Resources\SalesReturnReportResource;
 use App\Http\Resources\StockReportResource;
+use App\Services\DailyRegistrarPdfService;
 use App\Services\ReportExportService;
 use App\Services\ReportService;
 use App\Traits\ApiResponse;
@@ -20,7 +21,11 @@ class ReportController extends Controller
 {
     use ApiResponse;
 
-    public function __construct(protected ReportService $reports, protected ReportExportService $exporter) {}
+    public function __construct(
+        protected ReportService $reports,
+        protected ReportExportService $exporter,
+        protected DailyRegistrarPdfService $dailyRegistrarPdf,
+    ) {}
 
     public function stocks(Request $request): JsonResponse
     {
@@ -87,6 +92,35 @@ class ReportController extends Controller
             'Success',
             ['summary' => $report['summary']],
         );
+    }
+
+    public function dailyRegistrar(Request $request): JsonResponse
+    {
+        $filters = $this->validateFilters($request, [
+            'date' => ['nullable', 'date_format:Y-m-d'],
+        ]);
+        $filters['date'] = $filters['date'] ?? now()->toDateString();
+
+        return $this->success($this->reports->dailyRegistrar($filters));
+    }
+
+    public function exportDailyRegistrarPdf(Request $request): StreamedResponse
+    {
+        $filters = $this->validateFilters($request, [
+            'date' => ['nullable', 'date_format:Y-m-d'],
+        ]);
+        $filters['date'] = $filters['date'] ?? now()->toDateString();
+
+        $report = $this->reports->dailyRegistrar($filters);
+        $content = $this->dailyRegistrarPdf->generate($report, $filters);
+        $name = 'daily-registrar-report-'.$filters['date'];
+        if (($filters['shop_id'] ?? null) !== null) {
+            $name .= '-shop-'.$filters['shop_id'];
+        }
+
+        return response()->streamDownload(function () use ($content): void {
+            echo $content;
+        }, $name.'.pdf', ['Content-Type' => 'application/pdf']);
     }
 
     public function exportStocks(Request $request): StreamedResponse

@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\BrandController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\ExpenseController;
 use App\Http\Controllers\Api\V1\LandingPageController;
 use App\Http\Controllers\Api\V1\PaymentTypeController;
 use App\Http\Controllers\Api\V1\PermissionController;
@@ -53,6 +54,15 @@ Route::prefix('v1')->group(function () {
             Route::get('sales-returns', 'salesReturns')->middleware('permission:reports.view');
             Route::get('registrar/export', 'exportRegistrar')->middleware('permission:reports.view');
             Route::get('registrar', 'registrar')->middleware('permission:reports.view');
+            Route::get('daily-registrar/pdf', 'exportDailyRegistrarPdf')->middleware('permission:reports.view');
+            Route::get('daily-registrar', 'dailyRegistrar')->middleware('permission:reports.view');
+        });
+
+        Route::controller(ExpenseController::class)->prefix('expenses')->group(function () {
+            Route::get('/', 'index')->middleware('permission:expenses.view');
+            Route::post('/', 'store')->middleware('permission:expenses.create');
+            Route::match(['put', 'patch'], '{expense}', 'update')->middleware('permission:expenses.update');
+            Route::delete('{expense}', 'destroy')->middleware('permission:expenses.delete');
         });
 
         Route::controller(ProductController::class)->prefix('products')->group(function () {

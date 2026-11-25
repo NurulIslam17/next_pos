@@ -93,9 +93,17 @@ function ShopForm({ shop, onSaved, onCancel }) {
                         className={inputClass}
                         value={form.code}
                         onChange={set("code")}
-                        placeholder="SHOP-09"
+                        placeholder="DHK"
+                        maxLength={3}
                         required
                     />
+                    <span
+                        className={`mt-1 block text-xs font-normal ${form.code.length >= 3 ? "text-amber-600" : "text-slate-400"}`}
+                    >
+                        {form.code.length >= 3
+                            ? "Maximum 3 characters reached."
+                            : `Maximum 3 characters (${form.code.length}/3). Uppercase preferred.`}
+                    </span>
                 </Field>
             </div>
             <Field label="Address" error={first("address")}>

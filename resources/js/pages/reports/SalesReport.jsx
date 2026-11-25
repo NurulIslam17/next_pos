@@ -2,7 +2,7 @@ import { Badge } from '../../components/ui';
 import ReportPage, { money } from './ReportPage';
 
 const filters = [
-    { key: 'shop_id', label: 'Shop', type: 'select' },
+    { key: 'shop_id', label: 'Shop', type: 'select' ,className: 'min-w-[350px] flex-1'},
     { key: 'search', label: 'Search', type: 'search', placeholder: 'Invoice No, Reference No, Customer…', className: 'min-w-[240px] flex-1' },
     { key: 'date_from', label: 'Date from', type: 'date', className: 'w-44' },
     { key: 'date_to', label: 'Date to', type: 'date', className: 'w-44' },

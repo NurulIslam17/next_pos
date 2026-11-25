@@ -16,6 +16,7 @@ class PermissionSeeder extends Seeder
         'products' => ['view', 'create', 'update', 'delete'],
         'purchases' => ['view', 'create', 'approve'],
         'sales' => ['view', 'create', 'return'],
+        'expenses' => ['view', 'create', 'update', 'delete'],
         'categories' => ['view', 'create', 'update', 'delete'],
         'brands' => ['view', 'create', 'update', 'delete'],
         'barcodes' => ['view'],
@@ -48,14 +49,15 @@ class PermissionSeeder extends Seeder
         // Super admin: everything (also bypassed by Gate::before).
         Role::findOrCreate('super_admin', 'web')->syncPermissions($all);
 
-        // Shop manager: manage products, read the rest of the catalogue.
+        // Shop manager: manage products and create catalogue master data.
         Role::findOrCreate('manager', 'web')->syncPermissions([
             'dashboard.view',
             'products.view', 'products.create', 'products.update', 'products.delete',
             'purchases.view', 'purchases.create',
             'sales.view', 'sales.create', 'sales.return',
+            'expenses.view', 'expenses.create', 'expenses.update', 'expenses.delete',
             'categories.view', 'categories.create',
-            'brands.view', 'brands.create', 'barcodes.view', 'reports.view', 'shops.view', 'suppliers.view',
+            'brands.view', 'brands.create', 'barcodes.view', 'reports.view', 'shops.view', 'suppliers.view', 'suppliers.create',
             'customers.view', 'customers.create', 'payment_types.view',
         ]);
 

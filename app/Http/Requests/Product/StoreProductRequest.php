@@ -18,7 +18,7 @@ class StoreProductRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             // Optional: when omitted (or already taken) the service generates the code.
-            'sku' => ['nullable', 'string', 'max:100', 'unique:products,sku'],
+            'sku' => ['nullable', 'string', 'max:15', 'unique:products,sku'],
             'category_id' => ['nullable', 'exists:categories,id'],
             'brand_id' => ['nullable', 'exists:brands,id'],
             'supplier_id' => ['nullable', 'exists:suppliers,id'],
