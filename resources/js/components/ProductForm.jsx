@@ -33,10 +33,12 @@ export default function ProductForm({
     onSaved,
     onCancel,
     onOptionCreated,
+    draft = null,
+    onDraftChange,
 }) {
     const { user, can } = useAuth();
     const isManager = user?.role === "manager";
-    const [form, setForm] = useState({
+    const initialForm = {
         name: product?.name ?? "",
         created_by_shop_id:
             product?.created_by_shop_id ?? (isManager ? user?.shop_id ?? "" : ""),
@@ -51,14 +53,20 @@ export default function ProductForm({
         vat_type: "included",
         note: product?.note ?? "",
         is_active: product?.is_active ?? true,
-    });
+    };
+    const [form, setForm] = useState(!product && draft?.form ? { ...initialForm, ...draft.form } : initialForm);
     const [existingImages, setExistingImages] = useState(product?.images ?? []);
     const [newImages, setNewImages] = useState([]);
     const [removedImageIds, setRemovedImageIds] = useState([]);
     const [errors, setErrors] = useState({});
     const [message, setMessage] = useState("");
     const [isSaving, setIsSaving] = useState(false);
-    const [isSkuAuto, setIsSkuAuto] = useState(!product);
+    const [isSkuAuto, setIsSkuAuto] = useState(!product ? (draft?.isSkuAuto ?? true) : false);
+
+    useEffect(() => {
+        if (product || !onDraftChange) return;
+        onDraftChange({ form, isSkuAuto });
+    }, [product, onDraftChange, form, isSkuAuto]);
 
     useEffect(() => {
         if (product || !isSkuAuto) return;

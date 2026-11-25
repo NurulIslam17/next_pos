@@ -8,6 +8,7 @@ import Brands from './pages/config/Brands';
 import Categories from './pages/Categories';
 import Customers from './pages/config/Customers';
 import Dashboard from './pages/Dashboard';
+import Expenses from './pages/Expenses';
 import LandingPage from './pages/config/LandingPage';
 import PaymentTypes from './pages/config/PaymentTypes';
 import Permissions from './pages/config/Permissions';
@@ -20,6 +21,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Products from './pages/Products';
 import Purchases from './pages/Purchases';
+import DailyRegistrarReport from './pages/reports/DailyRegistrarReport';
 import PurchasesReport from './pages/reports/PurchasesReport';
 import RegistrarReport from './pages/reports/RegistrarReport';
 import Sales from './pages/Sales';
@@ -37,11 +39,13 @@ const pages = [
     { path: '/categories', permission: 'categories.view', element: <Categories /> },
     { path: '/brands', permission: 'brands.view', element: <Brands /> },
     { path: '/barcodes', permission: 'barcodes.view', element: <Barcodes /> },
+    { path: '/expenses', permission: 'expenses.view', element: <Expenses /> },
     { path: '/reports/stocks', permission: 'reports.view', element: <StocksReport /> },
     { path: '/reports/purchases', permission: 'reports.view', element: <PurchasesReport /> },
     { path: '/reports/sales', permission: 'reports.view', element: <SalesReport /> },
     { path: '/reports/returns', permission: 'reports.view', element: <SalesReturnReport /> },
     { path: '/reports/registrar', permission: 'reports.view', element: <RegistrarReport /> },
+    { path: '/reports/daily-registrar', permission: 'reports.view', element: <DailyRegistrarReport /> },
     { path: '/configuration/landing-page', permission: 'landing_page.view', element: <LandingPage /> },
     { path: '/configuration/users', permission: 'users.view', element: <Users /> },
     { path: '/configuration/shops', permission: 'shops.view', element: <Shops /> },

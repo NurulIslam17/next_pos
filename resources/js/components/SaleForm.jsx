@@ -254,41 +254,45 @@ function writeReceipt(printWindow, sale) {
     printWindow.document.write(`<!doctype html>
 <html>
 <head>
-    <title>Sale ${escapeHtml(sale.sale_no)}</title>
+    <title>Invoice ${escapeHtml(sale.sale_no)}</title>
     <style>
-        body { font-family: Arial, sans-serif; font-size: 12px; margin: 24px; color: #111827; }
-        h1 { font-size: 18px; margin: 0 0 4px; text-align: center; }
-        h2 { font-size: 13px; margin: 18px 0 6px; }
-        p { margin: 2px 0; }
-        .muted { color: #6b7280; }
+        @page { size: 80mm auto; margin: 2mm; }
+        * { box-sizing: border-box; }
+        body { width: 76mm; margin: 0 auto; font-family: Arial, sans-serif; font-size: 11px; color: #111; }
+        h1 { font-size: 14px; margin: 0 0 2px; text-align: center; }
+        p { margin: 1px 0; }
+        .muted { color: #555; }
         .center { text-align: center; }
         .right { text-align: right; }
-        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-        th, td { padding: 5px 2px; border-bottom: 1px solid #e5e7eb; }
-        th { text-align: left; font-size: 11px; color: #4b5563; }
-        .totals { margin-top: 14px; margin-left: auto; width: 220px; }
-        .totals div { display: flex; justify-content: space-between; padding: 2px 0; }
-        .grand { font-size: 14px; font-weight: bold; border-top: 1px solid #111827; margin-top: 4px; padding-top: 6px; }
-        .footer { margin-top: 22px; text-align: center; color: #6b7280; }
-        @media print { body { margin: 12px; } }
+        .line { border-top: 1px dashed #333; margin: 4px 0; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 2px 0; vertical-align: top; }
+        th { text-align: left; font-size: 10px; border-bottom: 1px dashed #333; }
+        .totals div { display: flex; justify-content: space-between; padding: 1px 0; }
+        .grand { font-weight: bold; border-top: 1px dashed #333; margin-top: 2px; padding-top: 2px; }
+        .footer { margin-top: 6px; text-align: center; font-size: 10px; }
+        @media print { body { width: auto; margin: 0; } }
     </style>
 </head>
 <body>
-    <h1>Sales Receipt</h1>
-    <p class="center muted">${escapeHtml(sale.shop_name ?? "-")}</p>
-    <h2>Invoice: ${escapeHtml(sale.sale_no)}</h2>
+    <h1>${escapeHtml(sale.shop_name ?? "INVOICE")}</h1>
+    <p class="center muted">Sales Invoice</p>
+    <div class="line"></div>
+    <p>Invoice: ${escapeHtml(sale.sale_no)}</p>
     <p>Date: ${escapeHtml(sale.sale_date)}</p>
     <p>Customer: ${escapeHtml(sale.customer_name ?? "Walk-in Customer")}</p>
     <p>Payment: ${escapeHtml(sale.payment_type_name ?? "-")}</p>
-    ${sale.reference_no ? `<p>Reference: ${escapeHtml(sale.reference_no)}</p>` : ""}
+    ${sale.reference_no ? `<p>Ref: ${escapeHtml(sale.reference_no)}</p>` : ""}
+    <div class="line"></div>
     <table>
-        <thead><tr><th>Product</th><th class="center">Qty</th><th class="right">Price</th><th class="right">Total</th></tr></thead>
+        <thead><tr><th>Item</th><th class="center">Qty</th><th class="right">Price</th><th class="right">Total</th></tr></thead>
         <tbody>${itemRows}</tbody>
     </table>
+    <div class="line"></div>
     <div class="totals">
         <div><span>Subtotal</span><span>${receiptMoney(sale.subtotal)}</span></div>
         <div><span>Discount</span><span>-${receiptMoney(sale.discount)}</span></div>
-        <div><span>VAT</span><span>${receiptMoney(sale.vat)}</span></div>
+        <div><span>VAT (Included)</span><span>${receiptMoney(sale.vat)}</span></div>
         <div class="grand"><span>Grand Total</span><span>${receiptMoney(sale.total)}</span></div>
         <div><span>Paid</span><span>${receiptMoney(sale.paid_amount)}</span></div>
         <div><span>Due</span><span>${receiptMoney(sale.due_amount)}</span></div>
@@ -392,7 +396,7 @@ export default function SaleForm({ onSaved, onCancel }) {
             rows.reduce((sum, row) => sum + row.discount, 0),
         );
         const vat = round2(rows.reduce((sum, row) => sum + row.vat, 0));
-        const total = round2(subtotal - discount + vat);
+        const total = round2(subtotal - discount);
         return { subtotal, discount, vat, total, paid: total, due: 0 };
     }, [items]);
 
@@ -501,7 +505,7 @@ export default function SaleForm({ onSaved, onCancel }) {
             writeReceipt(receiptWindow, response.data);
         } else if (shouldPrint) {
             window.alert(
-                "Sale saved, but the receipt window was blocked. Allow pop-ups to print receipts.",
+                "Sale saved, but the invoice window was blocked. Allow pop-ups to print invoices.",
             );
         }
         onSaved();
@@ -911,7 +915,7 @@ export default function SaleForm({ onSaved, onCancel }) {
                         <span>-{totals.discount.toFixed(2)}</span>
                     </div>
                     <div className="w-64 flex justify-between">
-                        <span className="text-slate-500">VAT</span>
+                        <span className="text-slate-500">VAT(Included)</span>
                         <span>{totals.vat.toFixed(2)}</span>
                     </div>
                     <div className="w-64 flex justify-between text-base font-semibold">
@@ -943,7 +947,7 @@ export default function SaleForm({ onSaved, onCancel }) {
                     className={primaryButton}
                 >
                     <FiPrinter className="h-4 w-4" />{" "}
-                    {isSaving ? "Saving…" : "Print Receipt & Sale"}
+                    {isSaving ? "Saving…" : "Print Invoice & Sell"}
                 </button>
                 <button
                     type="button"
@@ -952,7 +956,7 @@ export default function SaleForm({ onSaved, onCancel }) {
                     className={secondaryButton}
                 >
                     <FiSave className="h-4 w-4" />{" "}
-                    {isSaving ? "Saving…" : "Sale"}
+                    {isSaving ? "Saving…" : "Sell"}
                 </button>
             </div>
         </form>

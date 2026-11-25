@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { BsUpcScan } from 'react-icons/bs';
-import { FiActivity, FiChevronDown, FiChevronRight, FiCreditCard, FiGlobe, FiGrid, FiKey, FiList, FiLogOut, FiPackage, FiPieChart, FiRotateCcw, FiSettings, FiShield, FiShoppingBag, FiShoppingCart, FiTag, FiTruck, FiUser, FiUsers, FiAward, FiTrendingUp } from 'react-icons/fi';
+import { FiActivity, FiChevronDown, FiChevronRight, FiCreditCard, FiFileText, FiGlobe, FiGrid, FiKey, FiList, FiLogOut, FiPackage, FiPieChart, FiRotateCcw, FiSettings, FiShield, FiShoppingBag, FiShoppingCart, FiTag, FiTruck, FiUser, FiUsers, FiAward, FiTrendingUp, FiDollarSign } from 'react-icons/fi';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth';
 import ChangePasswordForm from './ChangePasswordForm';
@@ -22,13 +22,15 @@ const navigation = [
     { to: '/categories', label: 'Categories', icon: FiTag, permission: 'categories.view' },
     { to: '/brands', label: 'Brands', icon: FiAward, permission: 'brands.view' },
     { to: '/barcodes', label: 'Barcode', icon: BsUpcScan, permission: 'barcodes.view' },
+    { to: '/expenses', label: 'Expenses', icon: FiFileText, permission: 'expenses.view' },
     {
         label: 'Reports',
         icon: FiPieChart,
         children: [
+            { to: '/reports/daily-registrar', label: 'Daily Report', icon: FiList, permission: 'reports.view' },
             { to: '/reports/stocks', label: 'Stocks Report', icon: FiPackage, permission: 'reports.view' },
+            { to: '/reports/sales', label: 'Sales Report', icon: FiDollarSign, permission: 'reports.view' },
             { to: '/reports/purchases', label: 'Purchase Report', icon: FiShoppingCart, permission: 'reports.view' },
-            { to: '/reports/sales', label: 'Sales Report', icon: FiTrendingUp, permission: 'reports.view' },
             { to: '/reports/returns', label: 'Sales Return', icon: FiRotateCcw, permission: 'reports.view' },
             { to: '/reports/registrar', label: 'Registrar Report', icon: FiList, permission: 'reports.view' },
         ],
