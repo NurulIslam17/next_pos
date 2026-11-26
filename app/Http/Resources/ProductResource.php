@@ -36,6 +36,7 @@ class ProductResource extends JsonResource
                 'original_name' => $image->original_name,
                 'sort_order' => $image->sort_order,
             ])->values()->all()),
+            'image_url' => $this->whenLoaded('images', fn () => ($first = $this->images->sortBy('sort_order')->first()) ? Storage::url($first->path) : null),
             'is_active' => $this->is_active,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

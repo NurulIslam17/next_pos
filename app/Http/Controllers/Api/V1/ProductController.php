@@ -27,7 +27,11 @@ class ProductController extends Controller
 
     public function all(Request $request): JsonResponse
     {
-        return $this->success(ProductResource::collection($this->products->all($request->integer('shop_id') ?: null)));
+        $shopId = $request->integer('shop_id') ?: null;
+        $isAdmin = ! $request->user()->hasRole('manager');
+        $limit = $isAdmin && ! $shopId ? 100 : null;
+
+        return $this->success(ProductResource::collection($this->products->all($shopId, $limit, (bool) $limit)));
     }
 
     public function nextSku(Request $request): JsonResponse
