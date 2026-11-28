@@ -18,9 +18,9 @@ class ProductService
         protected ProductImageService $images,
     ) {}
 
-    public function all(?int $shopId = null): Collection
+    public function all(?int $shopId = null, ?int $limit = null, bool $random = false): Collection
     {
-        return $this->products->allForShop($shopId);
+        return $this->products->allForShop($shopId, $limit, $random);
     }
 
     public function list(?string $search = null, int $perPage = 15, ?int $categoryId = null, ?int $shopId = null): LengthAwarePaginator

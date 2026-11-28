@@ -9,7 +9,7 @@ interface ProductRepositoryInterface extends BaseRepositoryInterface
 {
     public function skuExists(string $sku): bool;
 
-    public function allForShop(?int $shopId = null): Collection;
+    public function allForShop(?int $shopId = null, ?int $limit = null, bool $random = false): Collection;
 
     public function search(?string $term, int $perPage = 15, ?int $categoryId = null, ?int $shopId = null): LengthAwarePaginator;
 }

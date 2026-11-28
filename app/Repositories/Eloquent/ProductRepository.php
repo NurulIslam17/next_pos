@@ -20,12 +20,13 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
         return $this->model->withoutGlobalScope(ManagerShopScope::class)->where('sku', $sku)->exists();
     }
 
-    public function allForShop(?int $shopId = null): Collection
+    public function allForShop(?int $shopId = null, ?int $limit = null, bool $random = false): Collection
     {
         return $this->model
             ->with('images')
             ->when($shopId, fn ($q) => $q->where('created_by_shop_id', $shopId))
-            ->orderBy('name')
+            ->when($random, fn ($q) => $q->inRandomOrder(), fn ($q) => $q->orderBy('name'))
+            ->when($limit, fn ($q) => $q->limit($limit))
             ->get();
     }
 

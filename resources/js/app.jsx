@@ -10,6 +10,7 @@ import Customers from './pages/config/Customers';
 import Dashboard from './pages/Dashboard';
 import Expenses from './pages/Expenses';
 import LandingPage from './pages/config/LandingPage';
+import POS from './pages/POS';
 import PaymentTypes from './pages/config/PaymentTypes';
 import Permissions from './pages/config/Permissions';
 import Roles from './pages/config/Roles';
@@ -98,6 +99,7 @@ function App() {
         <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/pos" element={<RequireAuth><RequirePermission permission="sales.create"><POS /></RequirePermission></RequireAuth>} />
             <Route
                 element={
                     <RequireAuth>

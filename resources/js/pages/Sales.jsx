@@ -16,17 +16,23 @@ const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => 
     "'": '&#39;',
 })[char]);
 
-function writePosInvoice(printWindow, sale, downloadCallback) {
-    const itemRows = (sale.items ?? []).map((item) => `
+function writePosInvoice(printWindow, sale, downloadCallback, printedBy = '') {
+    const itemRows = (sale.items ?? []).map((item) => {
+        const discount = Number(item.discount ?? 0);
+        const vatRate = Number(item.vat_rate ?? 0);
+        const vatType = item.vat_type ?? 'included';
+        const qty = Number(item.quantity ?? 0);
+        const price = Number(item.unit_price ?? 0);
+        return `
         <div class="item">
-            <div class="item-name">${escapeHtml(item.product_name ?? '-')}</div>
+            <div class="item-name">${escapeHtml(item.product_name ?? '-')}${item.product_sku ? ` (${escapeHtml(item.product_sku)})` : ''}</div>
             <div class="row item-detail">
-                <span>${escapeHtml(item.product_sku ?? '')}</span>
-                <span>${escapeHtml(item.quantity)} x ${money(item.unit_price)}</span>
+                <span>${qty} x ${money(price)}  ${vatRate > 0 ? `${vatRate}%(${escapeHtml(vatType)})` : ''} ${discount > 0 ? `Disc: ${money(discount)}` : ''}</span>
                 <span>${money(item.line_total)}</span>
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
 
     printWindow.document.write(`<!doctype html>
 <html>
@@ -72,6 +78,7 @@ function writePosInvoice(printWindow, sale, downloadCallback) {
         <div class="row"><span>Invoice</span><span>${escapeHtml(sale.sale_no)}</span></div>
         <div class="row"><span>Date</span><span>${escapeHtml(sale.sale_date)}</span></div>
         <div class="row"><span>Customer</span><span>${escapeHtml(sale.customer_name ?? 'Walk-in Customer')}</span></div>
+        <div class="row"><span>Sold By</span><span>${escapeHtml(sale.created_by_name ?? '-')}</span></div>
         <div class="row"><span>Payment</span><span>${escapeHtml(sale.payment_type_name ?? '-')}</span></div>
         ${sale.reference_no ? `<div class="row"><span>Reference</span><span>${escapeHtml(sale.reference_no)}</span></div>` : ''}
         <div class="rule"></div>
@@ -92,6 +99,7 @@ function writePosInvoice(printWindow, sale, downloadCallback) {
         ` : ''}
         ${sale.note ? `<div class="rule"></div><div>Note: ${escapeHtml(sale.note)}</div>` : ''}
         <div class="rule"></div>
+        ${printedBy ? `<div class="row"><span>Printed By</span><span>${escapeHtml(printedBy)}</span></div>` : ''}
         <div class="footer">Thank you for your purchase.</div>
     </div>
 </body>
@@ -107,7 +115,7 @@ const StatusBadge = ({ status }) => (
 );
 
 export default function Sales() {
-    const { can, isSuperAdmin } = useAuth();
+    const { can, isSuperAdmin, user } = useAuth();
     const [isCreating, setIsCreating] = useState(false);
     const [details, setDetails] = useState(null);
     const [returnReason, setReturnReason] = useState('');
@@ -204,7 +212,7 @@ export default function Sales() {
         printWindow.onbeforeunload = () => {
             delete window[callbackName];
         };
-        writePosInvoice(printWindow, sale, callbackName);
+        writePosInvoice(printWindow, sale, callbackName, user?.name ?? '');
     };
 
     if (isCreating) {
@@ -362,6 +370,7 @@ export default function Sales() {
                         <div><span className="text-slate-500">Date</span><div className="font-medium">{details.sale_date}</div></div>
                         <div><span className="text-slate-500">Customer</span><div className="font-medium">{details.customer_name ?? 'Walk-in Customer'}</div></div>
                         <div><span className="text-slate-500">Shop</span><div className="font-medium">{details.shop_name ?? '-'}</div></div>
+                        <div><span className="text-slate-500">Sold By</span><div className="font-medium">{details.created_by_name ?? '-'}</div></div>
                         <div><span className="text-slate-500">Payment</span><div className="font-medium">{details.payment_type_name ?? '-'}</div></div>
                         <div><span className="text-slate-500">Reference</span><div className="font-medium">{details.reference_no ?? '-'}</div></div>
                         <div><span className="text-slate-500">Status</span><div className="mt-1"><StatusBadge status={details.status} /></div></div>

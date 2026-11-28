@@ -237,17 +237,25 @@ const escapeHtml = (value) =>
 
 const receiptMoney = (value) => Number(value ?? 0).toFixed(2);
 
-function writeReceipt(printWindow, sale) {
+function writeReceipt(printWindow, sale, currentUserName = '') {
     const itemRows = (sale.items ?? [])
         .map(
-            (item) => `
+            (item) => {
+                const discount = Number(item.discount ?? 0);
+                const vatRate = Number(item.vat_rate ?? 0);
+                const vatType = item.vat_type ?? 'included';
+                return `
         <tr>
-            <td>${escapeHtml(item.product_name)}</td>
-            <td class="center">${escapeHtml(item.quantity)}</td>
-            <td class="right">${receiptMoney(item.unit_price)}</td>
-            <td class="right">${receiptMoney(item.line_total)}</td>
+            <td colspan="4">
+                <div>${escapeHtml(item.product_name)}${item.product_sku ? ` (${escapeHtml(item.product_sku)})` : ''}</div>
+                <div class="muted" style="font-size:9px;display:flex;justify-content:space-between;gap:4px;">
+                    <span>${item.quantity} x ${receiptMoney(item.unit_price)} ${vatRate > 0 ? `${vatRate}%(${escapeHtml(vatType)})` : ''} ${discount > 0 ? `Disc: ${receiptMoney(discount)}` : ''}</span>
+                    <span>${receiptMoney(item.line_total)}</span>
+                </div>
+            </td>
         </tr>
-    `,
+    `;
+            },
         )
         .join("");
 
@@ -280,12 +288,13 @@ function writeReceipt(printWindow, sale) {
     <div class="line"></div>
     <p>Invoice: ${escapeHtml(sale.sale_no)}</p>
     <p>Date: ${escapeHtml(sale.sale_date)}</p>
-    <p>Customer: ${escapeHtml(sale.customer_name ?? "Walk-in Customer")}</p>
-    <p>Payment: ${escapeHtml(sale.payment_type_name ?? "-")}</p>
-    ${sale.reference_no ? `<p>Ref: ${escapeHtml(sale.reference_no)}</p>` : ""}
+        <p>Customer: ${escapeHtml(sale.customer_name ?? "Walk-in Customer")}</p>
+        <p>Payment: ${escapeHtml(sale.payment_type_name ?? "-")}</p>
+        ${sale.reference_no ? `<p>Ref: ${escapeHtml(sale.reference_no)}</p>` : ""}
+        <p>Sold By: ${escapeHtml(sale.created_by_name ?? "-")}</p>
     <div class="line"></div>
     <table>
-        <thead><tr><th>Item</th><th class="center">Qty</th><th class="right">Price</th><th class="right">Total</th></tr></thead>
+        <thead><tr><th>Item / Details</th><th class="center"></th><th class="right"></th><th class="right"></th></tr></thead>
         <tbody>${itemRows}</tbody>
     </table>
     <div class="line"></div>
@@ -297,6 +306,7 @@ function writeReceipt(printWindow, sale) {
         <div><span>Paid</span><span>${receiptMoney(sale.paid_amount)}</span></div>
         <div><span>Due</span><span>${receiptMoney(sale.due_amount)}</span></div>
     </div>
+    ${currentUserName ? `<p class="center muted">Printed By: ${escapeHtml(currentUserName)}</p>` : ""}
     <p class="footer">Thank you for your purchase.</p>
 </body>
 </html>`);
@@ -305,7 +315,7 @@ function writeReceipt(printWindow, sale) {
     printWindow.setTimeout(() => printWindow.print(), 250);
 }
 
-export default function SaleForm({ onSaved, onCancel }) {
+export default function SaleForm({ onSaved, onCancel = null }) {
     const { user, can } = useAuth();
     const isManager = user?.role === "manager";
     const today = new Date().toISOString().slice(0, 10);
@@ -502,13 +512,16 @@ export default function SaleForm({ onSaved, onCancel }) {
         }
 
         if (receiptWindow) {
-            writeReceipt(receiptWindow, response.data);
+            writeReceipt(receiptWindow, response.data, user?.name ?? '');
         } else if (shouldPrint) {
             window.alert(
                 "Sale saved, but the invoice window was blocked. Allow pop-ups to print invoices.",
             );
         }
-        onSaved();
+        setItems([]);
+        setProductSearch("");
+        if (!isManager) setField("shop_id", "");
+        onSaved?.(response.data);
     };
 
     const handleSubmit = (shouldPrint) => (event) => {
@@ -934,13 +947,15 @@ export default function SaleForm({ onSaved, onCancel }) {
             </div>
 
             <div className="flex flex-wrap justify-end gap-2">
-                <button
-                    type="button"
-                    onClick={onCancel}
-                    className={secondaryButton}
-                >
-                    Back to list
-                </button>
+                {onCancel && (
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        className={secondaryButton}
+                    >
+                        Back to list
+                    </button>
+                )}
                 <button
                     type="submit"
                     disabled={cannotSave}

@@ -116,7 +116,12 @@ export default function Layout() {
                 <nav className="flex-1 space-y-1 px-3">
                     {navigation
                         .filter((entry) => !entry.children && can(entry.permission))
-                        .map((entry) => (
+                        .map((entry) => entry.external ? (
+                            <a key={entry.to} href={entry.to} target="_blank" rel="noopener noreferrer" className={linkClass({ isActive: false })}>
+                                <entry.icon className="h-4 w-4 shrink-0" />
+                                {entry.label}
+                            </a>
+                        ) : (
                             <NavLink key={entry.to} to={entry.to} className={linkClass}>
                                 <entry.icon className="h-4 w-4 shrink-0" />
                                 {entry.label}
@@ -141,7 +146,13 @@ export default function Layout() {
                         <img src="/shopflow-mark.svg" alt="" className="h-8 w-8 rounded-lg" />
                         <span className="font-semibold">ShopFlow</span>
                     </div>
-                    <div className="relative ml-auto" ref={userMenuRef}>
+                    <div className="ml-auto flex items-center gap-3">
+                        {can('sales.create') && (
+                            <a href="/pos" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700">
+                                <FiShoppingCart className="h-4 w-4" /> POS
+                            </a>
+                        )}
+                        <div className="relative" ref={userMenuRef}>
                         <button
                             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                             aria-haspopup="menu"
@@ -186,6 +197,7 @@ export default function Layout() {
                                 </button>
                             </div>
                         )}
+                        </div>
                     </div>
                 </header>
                 <main className="app-main flex-1 overflow-y-auto p-4 sm:p-6">

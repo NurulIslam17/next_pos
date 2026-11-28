@@ -87,6 +87,12 @@ export default function DailyRegistrarReport() {
     };
 
     const summary = report?.summary;
+    const summaryCards = summary ? [
+        { label: 'Approved Purchases', value: money(summary.purchase_total), isPositive: false },
+        { label: 'Expenses', value: money(summary.expense_total), isPositive: false },
+        { label: 'Sales', value: money(summary.sales_total), isPositive: true },
+        { label: 'Net', value: money(summary.net_amount), isPositive: Number(summary.net_amount) > 0 },
+    ] : [];
 
     return (
         <div className="space-y-4">
@@ -121,23 +127,18 @@ export default function DailyRegistrarReport() {
 
             <ErrorBanner message={error} />
 
-            {summary && (
+            {summaryCards.length > 0 && (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    {[
-                        ['Approved Purchases', money(summary.purchase_total)],
-                        ['Expenses', money(summary.expense_total)],
-                        ['Sales', money(summary.sales_total)],
-                        ['Net', money(summary.net_amount)],
-                    ].map(([label, value]) => (
-                        <div key={label} className="rounded-xl bg-white p-4 ring-1 ring-slate-200">
-                            <div className="text-xs text-slate-500">{label}</div>
-                            <div className="mt-1 text-lg font-semibold text-slate-900">{value}</div>
+                    {summaryCards.map(({ label, value, isPositive }) => (
+                        <div key={label} className={`rounded-xl p-4 ring-1 ${isPositive ? 'bg-emerald-50 ring-emerald-200' : 'bg-red-50 ring-red-200'}`}>
+                            <div className={`text-xs ${isPositive ? 'text-emerald-600' : 'text-red-600'}`}>{label}</div>
+                            <div className={`mt-1 text-lg font-semibold ${isPositive ? 'text-emerald-700' : 'text-red-700'}`}>{value}</div>
                         </div>
                     ))}
                 </div>
             )}
 
-            <ReportSection title="Approved Purchases" count={summary?.purchase_count} total={summary?.purchase_total} columns={['Date', 'Purchase No', 'Supplier', 'Shop', 'Items', 'Total', 'Paid', 'Status']} isLoading={isLoading} isEmpty={!report?.purchases?.length} emptyText="No approved purchases for selected date.">
+            <ReportSection title="Approved Purchases" count={summary?.purchase_count} total={summary?.purchase_total} columns={[{label:'Date'},{label:'Purchase No'},{label:'Supplier'},{label:'Shop'},{label:'Items'},{label:'Total'},{label:'Paid'},{label:'Status'}]} isLoading={isLoading} isEmpty={!report?.purchases?.length} emptyText="No approved purchases for selected date.">
                 {(report?.purchases ?? []).map((row) => (
                     <tr key={row.id} className="text-center">
                         <td className="whitespace-nowrap px-4 py-3">{row.date}</td>
@@ -152,7 +153,7 @@ export default function DailyRegistrarReport() {
                 ))}
             </ReportSection>
 
-            <ReportSection title="Expenses" count={summary?.expense_count} total={summary?.expense_total} columns={['Date', 'Category', 'Reference', 'Shop', 'Note', 'Amount']} isLoading={isLoading} isEmpty={!report?.expenses?.length} emptyText="No expenses for selected date.">
+            <ReportSection title="Expenses" count={summary?.expense_count} total={summary?.expense_total} columns={[{label:'Date'},{label:'Category'},{label:'Reference'},{label:'Shop'},{label:'Note'},{label:'Amount'}]} isLoading={isLoading} isEmpty={!report?.expenses?.length} emptyText="No expenses for selected date.">
                 {(report?.expenses ?? []).map((row) => (
                     <tr key={row.id} className="text-center">
                         <td className="whitespace-nowrap px-4 py-3">{row.date}</td>
@@ -165,7 +166,7 @@ export default function DailyRegistrarReport() {
                 ))}
             </ReportSection>
 
-            <ReportSection title="Sales" count={summary?.sales_count} total={summary?.sales_total} columns={['Date', 'Invoice No', 'Customer', 'Shop', 'Items', 'Total', 'Paid', 'Status']} isLoading={isLoading} isEmpty={!report?.sales?.length} emptyText="No sales for selected date.">
+            <ReportSection title="Sales" count={summary?.sales_count} total={summary?.sales_total} columns={[{label:'Date'},{label:'Invoice No'},{label:'Customer'},{label:'Shop'},{label:'Items'},{label:'Total'},{label:'Paid'},{label:'Status'}]} isLoading={isLoading} isEmpty={!report?.sales?.length} emptyText="No sales for selected date.">
                 {(report?.sales ?? []).map((row) => (
                     <tr key={row.id} className="text-center">
                         <td className="whitespace-nowrap px-4 py-3">{row.date}</td>
@@ -174,6 +175,7 @@ export default function DailyRegistrarReport() {
                         <td className="px-4 py-3 whitespace-nowrap">{row.shop_name}</td>
                         <td className="px-4 py-3">{number(row.item_count)}</td>
                         <td className="whitespace-nowrap px-4 py-3">{money(row.total)}</td>
+                        <td className="whitespace-nowrap px-4 py-3">{money(row.paid_amount)}</td>
                         <td className="px-4 py-3"><Badge tone={row.status === 'Returned' ? 'amber' : 'green'}>{row.status}</Badge></td>
                     </tr>
                 ))}
