@@ -87,6 +87,12 @@ export default function DailyRegistrarReport() {
     };
 
     const summary = report?.summary;
+    const summaryCards = summary ? [
+        { label: 'Approved Purchases', value: money(summary.purchase_total), isPositive: false },
+        { label: 'Expenses', value: money(summary.expense_total), isPositive: false },
+        { label: 'Sales', value: money(summary.sales_total), isPositive: true },
+        { label: 'Net', value: money(summary.net_amount), isPositive: Number(summary.net_amount) > 0 },
+    ] : [];
 
     return (
         <div className="space-y-4">
@@ -121,17 +127,12 @@ export default function DailyRegistrarReport() {
 
             <ErrorBanner message={error} />
 
-            {summary && (
+            {summaryCards.length > 0 && (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    {[
-                        ['Approved Purchases', money(summary.purchase_total)],
-                        ['Expenses', money(summary.expense_total)],
-                        ['Sales', money(summary.sales_total)],
-                        ['Net', money(summary.net_amount)],
-                    ].map(([label, value]) => (
-                        <div key={label} className="rounded-xl bg-white p-4 ring-1 ring-slate-200">
-                            <div className="text-xs text-slate-500">{label}</div>
-                            <div className="mt-1 text-lg font-semibold text-slate-900">{value}</div>
+                    {summaryCards.map(({ label, value, isPositive }) => (
+                        <div key={label} className={`rounded-xl p-4 ring-1 ${isPositive ? 'bg-emerald-50 ring-emerald-200' : 'bg-red-50 ring-red-200'}`}>
+                            <div className={`text-xs ${isPositive ? 'text-emerald-600' : 'text-red-600'}`}>{label}</div>
+                            <div className={`mt-1 text-lg font-semibold ${isPositive ? 'text-emerald-700' : 'text-red-700'}`}>{value}</div>
                         </div>
                     ))}
                 </div>

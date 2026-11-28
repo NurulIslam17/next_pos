@@ -286,6 +286,8 @@ export default function POS() {
         items.length === 0 ||
         hasStockError ||
         !form.shop_id ||
+        !form.sale_date ||
+        !form.payment_type_id ||
         cartShopMismatch;
 
     const addByBarcode = (e) => {
@@ -477,6 +479,7 @@ export default function POS() {
                                 >
                                     <input
                                         type="date"
+                                        required
                                         value={form.sale_date}
                                         onChange={(e) =>
                                             setField(
@@ -487,6 +490,10 @@ export default function POS() {
                                         className={inputClass}
                                     />
                                 </Field>
+                              
+                            </div>
+                            <div className="mb-4 grid gap-3 sm:grid-cols-3">
+              
                                 <Field label="Customer">
                                     <CreatableSelect
                                         value={form.customer_id}
@@ -506,7 +513,10 @@ export default function POS() {
                                         }
                                     />
                                 </Field>
-                                <Field label="Payment Type">
+                                <Field
+                                    label="Payment Type"
+                                    error={first("payment_type_id")}
+                                >
                                     <CreatableSelect
                                         value={form.payment_type_id}
                                         onChange={(v) =>
@@ -526,6 +536,23 @@ export default function POS() {
                                                 p,
                                             ])
                                         }
+                                        required
+                                        invalid={Boolean(
+                                            first("payment_type_id"),
+                                        )}
+                                    />
+                                </Field>
+                                <Field
+                                    label="Reference No"
+                                    error={first("reference_no")}
+                                >
+                                    <input
+                                        value={form.reference_no}
+                                        onChange={(e) =>
+                                            setField("reference_no", e.target.value)
+                                        }
+                                        maxLength={100}
+                                        className={inputClass}
                                     />
                                 </Field>
                             </div>
